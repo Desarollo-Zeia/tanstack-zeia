@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #FAFAF5;
+    --foreground: #1C1C1E;
+    --card: #FFFFFF;
+    --card-foreground: #1C1C1E;
+    --popover: #FFFFFF;
+    --popover-foreground: #1C1C1E;
+    --primary: #00B7CA;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F5F5F0;
+    --secondary-foreground: #4D5A63;
+    --muted: #F5F5F0;
+    --muted-foreground: #8E8E93;
+    --accent: #E6F9FB;
+    --accent-foreground: #1C1C1E;
+    --destructive: #E71D36;
+    --destructive-foreground: #FFFFFF;
+    --border: #E8E8E3;
+    --input: #E8E8E3;
+    --ring: #00B7CA;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: #1C1C1E;
+    --foreground: #F5F5F0;
+    --card: #2C2C2E;
+    --card-foreground: #F5F5F0;
+    --popover: #2C2C2E;
+    --popover-foreground: #F5F5F0;
+    --primary: #5EDFFF;
+    --primary-foreground: #1C1C1E;
+    --secondary: #2C2C2E;
+    --secondary-foreground: #F5F5F0;
+    --muted: #2C2C2E;
+    --muted-foreground: #A1A1AA;
+    --accent: #0F3A3E;
+    --accent-foreground: #F5F5F0;
+    --destructive: #F87171;
+    --destructive-foreground: #1C1C1E;
+    --border: #3A3A3C;
+    --input: #3A3A3C;
+    --ring: #5EDFFF;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .card-executive {
+    @apply bg-card rounded-xl border border-border shadow-soft transition-all duration-300;
+  }
+
+  .card-executive:hover {
+    @apply shadow-medium;
+  }
+
+  .input-executive {
+    @apply bg-surface border border-border rounded-lg px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all;
+  }
+
+  .btn-executive {
+    @apply inline-flex items-center justify-center gap-2 font-sans font-medium text-sm px-6 py-3 rounded-lg transition-all duration-200;
+  }
+
+  .btn-executive-primary {
+    @apply btn-executive bg-primary text-white hover:bg-primary-hover hover:shadow-glow;
+  }
+
+  .btn-executive-outline {
+    @apply btn-executive bg-transparent border border-primary text-primary hover:bg-primary/5;
+  }
+
+  .btn-executive-ghost {
+    @apply btn-executive text-text-secondary hover:text-text-primary hover:bg-secondary;
+  }
+
+  .badge-executive {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .label-executive {
+    @apply font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted;
+  }
+
+  .kpi-value {
+    @apply font-mono text-4xl font-semibold text-text-primary tracking-tight font-tabular;
+  }
+
+  .section-title {
+    @apply font-sans text-xl font-semibold text-text-primary tracking-tight;
+  }
+}
+
+@layer utilities {
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
