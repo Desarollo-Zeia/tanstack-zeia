@@ -20,10 +20,7 @@ export function DashboardSidebar() {
       )}
     >
       {/* Header */}
-      <div className="h-16 border-b border-border flex items-center justify-between px-4 shrink-0">
-        {!collapsed && (
-          <span className="label-executive">Navegación</span>
-        )}
+      <div className="h-16 border-b border-border flex items-center justify-end px-4 shrink-0">
         <button
           className={cn(
             'w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-secondary transition-all',
@@ -31,7 +28,7 @@ export function DashboardSidebar() {
           )}
           onClick={() => setCollapsed(!collapsed)}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" fill='none'/>}
         </button>
       </div>
 
@@ -117,7 +114,7 @@ function SidebarLink({ href, icon, label, collapsed, active, indent }: SidebarLi
           className="shrink-0 w-5 h-5 flex items-center justify-center"
           dangerouslySetInnerHTML={{
             __html: svgContent
-              .replace(/fill="[^"]*"/g, '')
+              .replace(/fill="[^"]*"/g, 'fill="none"')
               .replace(/stroke="[^"]*"/g, `stroke="currentColor"`),
           }}
         />

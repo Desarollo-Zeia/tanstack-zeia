@@ -3,14 +3,14 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Zap, Eye, EyeOff, Loader2, Activity, Lock, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { requestToken } from '@/features/auth/api/request-token'
+import { requestToken, AuthError } from '@/features/auth/api/request-token'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 
 export const Route = createFileRoute('/energia/login')({
   component: LoginPage,
 })
 
-function LoginPage() {
+export function LoginPage() {
   const router = useRouter()
   const { setAuth } = useAuth()
   const [email, setEmail] = useState('')
@@ -22,12 +22,22 @@ function LoginPage() {
     mutationFn: requestToken,
     onSuccess: (data) => {
       setAuth(data)
-      // Redirigir a la primera URL de energy_modules
-      const firstModuleUrl = data.user.energy_modules?.[0]?.children?.[0]?.url || '/energia/dashboard/panel'
-      router.navigate({ to: firstModuleUrl })
+
+      const modules = data.user.energy_modules
+      const hasModules = Array.isArray(modules) && modules.length > 0
+      const firstModuleUrl = hasModules
+        ? (modules[0]?.children?.[0]?.url ?? modules[0]?.url)
+        : null
+
+      const targetUrl = firstModuleUrl ?? '/energia/dashboard/panel'
+      router.navigate({ to: targetUrl })
     },
     onError: (err: Error) => {
-      setError(err.message)
+      if (err instanceof AuthError) {
+        setError(err.message)
+      } else {
+        setError('Ocurrió un error inesperado. Intente nuevamente más tarde.')
+      }
     },
   })
 

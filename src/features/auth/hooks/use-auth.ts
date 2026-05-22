@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { AuthResponse, User } from '@/features/auth/types'
 
 const AUTH_STORAGE_KEY = 'zeia-auth'
@@ -21,11 +21,6 @@ function getStoredAuth(): AuthState | null {
 
 export function useAuth() {
   const [auth, setAuthState] = useState<AuthState | null>(getStoredAuth)
-
-  useEffect(() => {
-    const stored = getStoredAuth()
-    if (stored) setAuthState(stored)
-  }, [])
 
   const setAuth = useCallback((data: AuthResponse) => {
     const state: AuthState = {

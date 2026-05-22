@@ -1,35 +1,111 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { Zap, Activity, Gauge, BarChart3 } from 'lucide-react'
 import { DashboardShell } from '@/features/dashboard/components/shell'
+import { DashboardFilters } from '@/features/dashboard/components/filters'
+import { useDashboardFilters } from '@/features/dashboard/hooks/use-dashboard-filters'
+import { fetchConsumptionDistribution } from '@/features/dashboard/api/consumption'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Zap } from 'lucide-react'
 
 export const Route = createFileRoute('/energia/dashboard/panel')({
   component: PanelPage,
+  validateSearch: (search) => {
+    return {
+      sede: typeof search.sede === 'string' ? search.sede : undefined,
+      panel: typeof search.panel === 'string' ? search.panel : undefined,
+      desde: typeof search.desde === 'string' ? search.desde : undefined,
+      hasta: typeof search.hasta === 'string' ? search.hasta : undefined,
+    }
+  },
 })
 
 function PanelPage() {
+  const { sedeId, panelId, dateAfter, dateBefore, isReady } = useDashboardFilters()
+
+  const dateAfterStr = dateAfter ? formatDateISO(dateAfter) : ''
+  const dateBeforeStr = dateBefore ? formatDateISO(dateBefore) : ''
+
+  const { data: consumptionData, isLoading: isLoadingConsumption } = useQuery({
+    queryKey: ['consumption-distribution', sedeId, panelId, dateAfterStr, dateBeforeStr],
+    queryFn: () => {
+      if (!sedeId || !panelId || !dateAfterStr || !dateBeforeStr) {
+        throw new Error('Missing required parameters')
+      }
+      return fetchConsumptionDistribution(sedeId, panelId, dateAfterStr, dateBeforeStr)
+    },
+    enabled: isReady,
+  })
+
+  const mainPoint = consumptionData?.results.find((r) => r.is_main)
+  const topConsumer = consumptionData?.results
+    .filter((r) => !r.is_main)
+    .sort((a, b) => b.consumption_kwh - a.consumption_kwh)[0]
+
+  const kpis = [
+    {
+      title: 'Consumo Total',
+      value: consumptionData ? `${consumptionData.main_consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })} kWh` : '—',
+      subtitle: 'Panel principal',
+      icon: Activity,
+      isLoading: isLoadingConsumption,
+    },
+    {
+      title: 'Puntos de Medición',
+      value: consumptionData ? String(consumptionData.total_measurement_points) : '—',
+      subtitle: 'Dispositivos activos',
+      icon: Gauge,
+      isLoading: isLoadingConsumption,
+    },
+    {
+      title: mainPoint?.measurement_point_name ?? 'Punto Principal',
+      value: mainPoint ? `${mainPoint.consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })} kWh` : '—',
+      subtitle: mainPoint ? `${mainPoint.consumption_percentage.toFixed(1)}% del total` : '—',
+      icon: Zap,
+      isLoading: isLoadingConsumption,
+    },
+    {
+      title: topConsumer?.measurement_point_name ?? 'Mayor Consumidor',
+      value: topConsumer ? `${topConsumer.consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })} kWh` : '—',
+      subtitle: topConsumer ? `${topConsumer.consumption_percentage.toFixed(1)}% del total` : '—',
+      icon: BarChart3,
+      isLoading: isLoadingConsumption,
+    },
+  ]
+
   return (
     <DashboardShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-primary">Panel Dashboard</h1>
-          <p className="text-text-secondary">Vista general del sistema energético</p>
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#88939b' }}>Panel Dashboard</h1>
+            <p className="text-text-secondary">Vista general del sistema energético</p>
+          </div>
+          <DashboardFilters />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
+          {kpis.map((kpi, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-text-primary">
-                  Métrica {i}
+                <CardTitle className="text-sm font-medium truncate" style={{ color: '#88939b' }}>
+                  {kpi.title}
                 </CardTitle>
-                <Zap className="h-4 w-4 text-text-muted" />
+                <kpi.icon className="h-4 w-4 shrink-0" style={{ color: '#88939b' }} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-text-primary">
-                  {Math.floor(Math.random() * 1000)} kW
-                </div>
-                <p className="text-xs text-text-muted">+{Math.floor(Math.random() * 20)}% vs mes anterior</p>
+                {kpi.isLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-8 w-3/4 bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-text-primary">
+                      {kpi.value}
+                    </div>
+                    <p className="text-xs text-text-muted">{kpi.subtitle}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -37,16 +113,69 @@ function PanelPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Resumen</CardTitle>
+            <CardTitle>
+              {consumptionData
+                ? `Distribución de Consumo — ${consumptionData.electrical_panel_name}`
+                : 'Resumen'}
+            </CardTitle>
             <CardDescription>
-              Aquí se mostrarán los gráficos principales del dashboard
+              {consumptionData
+                ? `${consumptionData.date_range.start_date} → ${consumptionData.date_range.end_date} | ${consumptionData.total_measurement_points} puntos de medición`
+                : 'Seleccione sede, panel y fechas para ver los datos'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center text-text-muted">
-            Área de gráficos (próximamente)
+          <CardContent className="min-h-[300px]">
+            {isLoadingConsumption ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-text-muted">Cargando datos...</p>
+                </div>
+              </div>
+            ) : consumptionData ? (
+              <div className="space-y-4">
+                {consumptionData.results.map((result) => (
+                  <div
+                    key={result.measurement_point_id}
+                    className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text-primary truncate">
+                        {result.measurement_point_name}
+                      </p>
+                      <p className="text-xs text-text-muted">
+                        {result.device_name} • {result.capacity}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold text-text-primary">
+                        {result.consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })} kWh
+                      </p>
+                      <p className="text-xs text-primary font-medium">
+                        {result.consumption_percentage.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-text-muted">
+                <div className="text-center space-y-2">
+                  <BarChart3 className="w-12 h-12 mx-auto text-text-muted/40" />
+                  <p>Seleccione los filtros para cargar los datos de consumo</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </DashboardShell>
   )
+}
+
+function formatDateISO(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }

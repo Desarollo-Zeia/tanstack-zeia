@@ -18,6 +18,12 @@
       "sourceType": "github",
       "skillPath": "skills/tanstack-router/SKILL.md",
       "computedHash": "090ae367732367c6a9a693dde029072e0eda8463e2a1047da76a4ec9b7d58b63"
+    },
+    "vitest": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vitest/SKILL.md",
+      "computedHash": "0efd9cf8c56aada060d418d009cfe621a7915d0c73a958fe611985bc0c2fa4b8"
     }
   }
 }

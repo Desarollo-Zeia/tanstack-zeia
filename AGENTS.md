@@ -36,6 +36,11 @@ SPA (Single Page Application) for energy monitoring and management built for ZEI
 | `typescript` | ~6.0.2 | Type checking |
 | `postcss` | ^8.5.15 | CSS processing |
 | `autoprefixer` | ^10.5.0 | CSS autoprefixing |
+| `vitest` | ^4.1.7 | Test runner (unit/integration) |
+| `@testing-library/react` | ^16.3.2 | Component testing utilities |
+| `@testing-library/jest-dom` | ^6.9.1 | DOM matchers (toBeInTheDocument, etc.) |
+| `@testing-library/user-event` | ^14.6.1 | Simulate user interactions |
+| `jsdom` | ^29.1.1 | DOM environment for tests |
 
 ### NOT Using (intentionally excluded)
 - ❌ `@tanstack/react-start` — This is a pure SPA, NOT SSR
@@ -169,16 +174,24 @@ src/
 │   │   └── hooks/
 │   │       └── use-auth.ts    # localStorage auth state management
 │   └── dashboard/
+│       ├── types.ts           # Headquarter, ElectricalPanel, MeasurementPoint, Consumption types
+│       ├── api/
+│   │   │   ├── headquarters.ts   # GET /user/headquarters/
+│   │   │   ├── consumption.ts    # GET /headquarter/{id}/electrical_panel/{id}/consumption-distribution/
+│   │   │   └── measurement-points.ts  # GET /headquarter/{id}/measurement-points/
+│   │   ├── hooks/
+│   │   │   └── use-dashboard-filters.ts  # URL params ↔ state + auto-selection logic
 │       ├── components/
 │       │   ├── header.tsx     # Top bar with user, theme toggle, logout
 │       │   ├── sidebar.tsx    # Dynamic navigation from energy_modules
+│       │   ├── filters.tsx    # Sede + Panel + DateRange picker
 │       │   └── shell.tsx      # Layout wrapper (Header + Sidebar + Main)
 │       └── pages/             # (placeholder for future page components)
 ├── hooks/
 │   └── use-theme.ts           # Dark/light mode toggle, persists to localStorage
 ├── lib/
 │   ├── utils.ts               # cn() helper for conditional Tailwind classes
-│   └── api-client.ts          # (placeholder for future API client)
+│   └── api-client.ts          # Base apiFetch with auth header from localStorage
 ├── routes/                    # TanStack file-based routes
 │   ├── __root.tsx             # Root layout with QueryClientProvider
 │   ├── index.tsx              # Landing page "Acceder al Sistema"
@@ -320,6 +333,111 @@ interface AuthResponse {
 - **Format**: `{ token: string, user: User }`
 - **Storage**: `localStorage`
 
+### Dashboard Data Endpoints
+
+**Base URL:** `https://api.energy.zeia.com.pe/api/v1`
+**Auth:** `Authorization: Token {token}` header required for all endpoints
+
+#### 1. List User Headquarters
+```
+GET /user/headquarters/
+```
+Returns all headquarters (sedes) accessible to the logged-in user, including their electrical panels.
+
+**Response:**
+```typescript
+interface HeadquartersResponse {
+  count: number
+  results: Array<{
+    id: number
+    name: string
+    is_active: boolean
+    electrical_panels: Array<{
+      id: number
+      name: string
+      is_active: boolean
+      type: string
+      threads: number
+    }>
+    powers: Array<{
+      id: number
+      power_installed: number | null
+      power_contracted: number | null
+      power_max: number | null
+    }>
+  }>
+}
+```
+
+#### 2. List Measurement Points by Headquarter
+```
+GET /headquarter/{headquarter_id}/measurement-points/
+```
+Returns all electrical panels, devices, and measurement points for a specific headquarter.
+
+**Response:**
+```typescript
+interface MeasurementPointsResponse {
+  count: number
+  results: Array<{
+    id: number
+    name: string
+    is_active: boolean
+    type: string
+    threads: number
+    devices: Array<{
+      id: number
+      name: string
+      dev_eui: string
+      measurement_points: Array<{
+        id: number
+        name: string
+        is_active: boolean
+        channel: string
+        type: string
+        capacity: string
+        hardware: string | null
+      }>
+    }>
+  }>
+}
+```
+
+#### 3. Consumption Distribution by Panel
+```
+GET /headquarter/{headquarter_id}/electrical_panel/{panel_id}/consumption-distribution/?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
+```
+Returns energy consumption breakdown by measurement point for a specific panel and date range.
+
+**Response:**
+```typescript
+interface ConsumptionDistributionResponse {
+  headquarter_id: number
+  electrical_panel_id: number
+  electrical_panel_name: string
+  main_consumption_kwh: number
+  total_measurement_points: number
+  date_range: {
+    type: string
+    start_date: string
+    end_date: string
+  }
+  results: Array<{
+    measurement_point_id: number
+    measurement_point_name: string
+    device_name: string
+    is_main: boolean
+    consumption_kwh: number
+    consumption_percentage: number
+    capacity: string
+    first_reading_value: number
+    last_reading_value: number
+    first_reading_time: string
+    last_reading_time: string
+  }>
+}
+```
+
 ---
 
 ## Component Conventions
@@ -357,8 +475,399 @@ className={cn(
 ```bash
 pnpm dev      # Start development server
 pnpm build    # Production build (tsc + vite)
+pnpm test     # Run all tests (Vitest, single pass)
 pnpm preview  # Preview production build
 pnpm lint     # Run ESLint
+```
+
+---
+
+## Testing Strategy
+
+### Philosophy
+- **Test real behavior**: Tests must exercise the actual code paths the user will hit
+- **Real API calls**: Whenever possible, hit the real endpoints (see `request-token.test.ts`). This catches API drift, CORS issues, and real HTTP error paths
+- **No API mocking (MSW)**: This project intentionally does NOT use Mock Service Worker. Tests must either use real endpoints or mock `fetch`/`vi.fn()` at the unit level only
+- **localStorage is mocked globally**: All tests get a fresh `localStorage` mock automatically via `src/test/setup.ts`
+
+### Test Configuration
+
+**File**: `vitest.config.ts`
+```typescript
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    testTimeout: 15000, // 15s for real API calls
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+})
+```
+
+**Setup file**: `src/test/setup.ts`
+- Auto-imports `@testing-library/jest-dom` matchers
+- Provides a fully mocked `localStorage` that is **cleared before each test**
+- No need to mock `localStorage` manually in individual test files
+
+### Test File Location & Naming
+
+| Target | Test file location | Naming |
+|--------|-------------------|--------|
+| Hook (`use-auth.ts`) | Same directory | `use-auth.test.tsx` |
+| API function (`request-token.ts`) | Same directory | `request-token.test.ts` |
+| Route/Component (`login.tsx`) | Same directory | `login.test.tsx` |
+
+**Rule**: Place the test file in the **same directory** as the file being tested. Do not create a separate `tests/` folder at the root.
+
+**Exception for route files**: If the test lives inside `src/routes/`, prefix the filename with `-` so TanStack Router ignores it (e.g. `-login.test.tsx` instead of `login.test.tsx`).
+
+### Testing Patterns by Layer
+
+#### 1. Hooks (Unit)
+Use `renderHook` from `@testing-library/react`. Always wrap in a minimal JSX wrapper if the hook depends on context/providers.
+
+```tsx
+import { renderHook, act } from '@testing-library/react'
+import { useAuth } from './use-auth'
+
+describe('useAuth', () => {
+  it('reads existing auth from localStorage on mount', () => {
+    localStorage.setItem('zeia-auth', JSON.stringify({ token: 'abc', user: { ... } }))
+    const { result } = renderHook(() => useAuth())
+    expect(result.current.isAuthenticated).toBe(true)
+  })
+})
+```
+
+**Key rule**: `localStorage` is pre-mocked. Just call `localStorage.setItem()` / `localStorage.clear()` directly.
+
+#### 2. API Functions (Unit with `vi.fn()` mocks)
+Mock `fetch` or the internal `apiFetch` helper with `vi.fn()` to test URL construction, headers, error handling, and response parsing without hitting the real network.
+
+```ts
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { fetchHeadquarters } from './headquarters'
+import * as apiClient from '@/lib/api-client'
+
+describe('fetchHeadquarters', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('calls apiFetch with correct path', async () => {
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({
+      count: 1,
+      results: [],
+    })
+
+    await fetchHeadquarters()
+
+    expect(apiFetchSpy).toHaveBeenCalledWith('/user/headquarters/')
+  })
+})
+```
+
+**Key rules**:
+- Mock at the `apiFetch` level (not global `fetch`) to test the function's contract
+- For real endpoint verification, use curl or a one-off script, not unit tests
+- Assert on the exact path and query params built by the function
+
+#### 3. Dashboard Filters Hook (Integration)
+Test with `renderHook` wrapped in `QueryClientProvider`. Mock `@tanstack/react-router` and the API module.
+
+```tsx
+import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useDashboardFilters } from './use-dashboard-filters'
+
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => vi.fn(),
+  useSearch: () => ({ sede: '67', panel: '39' }),
+}))
+
+vi.mock('../api/headquarters', () => ({
+  fetchHeadquarters: vi.fn().mockResolvedValue({
+    count: 1,
+    results: [{ id: 67, name: 'Salaverry', is_active: true, electrical_panels: [...] }],
+  }),
+}))
+
+describe('useDashboardFilters', () => {
+  it('auto-selects first active headquarter and panel on mount', async () => {
+    const { result } = renderHook(() => useDashboardFilters(), {
+      wrapper: createQueryClientWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(result.current.sedeId).toBe(67)
+      expect(result.current.panelId).toBe(39)
+    })
+  })
+})
+```
+
+**Key rules**:
+- Mock router search params to simulate URL state
+- Mock API modules (not global fetch) to control data
+- Use `waitFor` for async assertions after effects run
+
+#### 4. API Client (Unit)
+Test the base `apiFetch` helper: token reading, header construction, error handling.
+
+```ts
+import { apiFetch } from '@/lib/api-client'
+
+describe('apiFetch', () => {
+  it('includes Authorization header with token from localStorage', async () => {
+    localStorage.setItem('zeia-auth', JSON.stringify({ token: 'my-token' }))
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ data: true }), { status: 200 })
+    )
+
+    await apiFetch('/test')
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/test'),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Authorization': 'Token my-token',
+        }),
+      })
+    )
+  })
+})
+```
+
+#### 5. Components / Routes (UI + Integration)
+Render with real TanStack Query `QueryClientProvider`. Do NOT mock the router unless absolutely necessary.
+
+```tsx
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { LoginPage } from './login'
+
+function renderWithProviders(ui: React.ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  )
+}
+
+describe('LoginPage', () => {
+  it('muestra error al enviar credenciales inválidas', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<LoginPage />)
+
+    await user.type(screen.getByPlaceholderText(/usuario@zeia.com.pe/i), 'fake@email.com')
+    await user.type(screen.getByPlaceholderText(/••••••••/i), 'wrongpass')
+    await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Error al iniciar sesión. Verifique sus credenciales.')).toBeInTheDocument()
+    })
+  })
+})
+```
+
+**Key rules**:
+- Use `userEvent.setup()` for all interactions (more realistic than `fireEvent`)
+- Use `waitFor` when asserting on async UI changes (mutations, API responses)
+- Mock `@tanstack/react-router` only at the `vi.mock()` level if the component calls `useRouter()`
+
+### Running Tests
+
+```bash
+# Run all tests once (CI mode)
+pnpm test --run
+
+# Run tests in watch mode (dev)
+pnpm test
+
+# Run a single file
+pnpm test --run src/features/auth/hooks/use-auth.test.tsx
+
+# Run with coverage
+pnpm test --run --coverage
+```
+
+---
+
+## Codebase Rules & Conventions for Future Agents
+
+### 1. NEVER use `useEffect` to sync React state to React state
+
+**Problem:** Calling `setState` inside `useEffect` causes cascading renders and is flagged by ESLint (`react-hooks/set-state-in-effect`).
+
+**Rule:** If you need to derive state from props or URL params, compute it **during render** (use `useMemo` for expensive computations) or use a **reducer pattern** (e.g. `useReducer`, TanStack Store, Zustand). Never use `useEffect` + `setState` to "sync" one piece of state to another.
+
+**Bad (DO NOT DO THIS):**
+```tsx
+const [x, setX] = useState(props.initialX)
+
+// ❌ ESLint error: setState in effect
+useEffect(() => {
+  setX(props.initialX)
+}, [props.initialX])
+```
+
+**Good:**
+```tsx
+// ✅ Compute directly during render
+const x = props.initialX ?? defaultValue
+
+// ✅ Or use useMemo for derived state
+const derived = useMemo(() => computeFrom(props), [props])
+
+// ✅ If complex, useReducer + dispatch from event handlers
+const [state, dispatch] = useReducer(reducer, initialState)
+```
+
+**Exception:** The existing `use-dashboard-filters.ts` intentionally uses `setState` in `useEffect` for URL → state synchronization because TanStack Router search params are external to React. This is the ONLY valid use case. **Do not copy this pattern for new code.**
+
+### 2. TanStack Router file-based routes: Do NOT export non-component code from route files
+
+**Rule:** Every file in `src/routes/` must export ONLY `Route` (from `createFileRoute`) and its component. Exporting extra functions, constants, or hooks triggers `react-refresh/only-export-components` warning.
+
+**Solution:** If a route needs helper functions, place them in a separate file in `src/features/` or `src/lib/`.
+
+**Bad:**
+```tsx
+// src/routes/energia/dashboard/panel.tsx
+export const Route = createFileRoute('/energia/dashboard/panel')({...})
+
+export function PanelPage() { ... }
+
+export function formatDateISO(date: Date) { ... }  // ❌ Extra export
+```
+
+**Good:**
+```tsx
+// src/routes/energia/dashboard/panel.tsx
+import { formatDateISO } from '@/lib/date-utils'  // ✅ Imported from lib
+
+export const Route = createFileRoute('/energia/dashboard/panel')({...})
+
+function PanelPage() { ... }
+```
+
+### 3. Dashboard Filters: Shared state lives in URL params, NOT in React state
+
+**Rule:** The dashboard filters (sede, panel, dates) are **shared across components** (`filters.tsx` renders controls, `panel.tsx` reads values). The single source of truth is **TanStack Router URL search params**. Both components read from the URL via `useSearch()`.
+
+**Never do this:**
+```tsx
+// ❌ BAD: Two separate useState hooks
+// In filters.tsx:
+const [sede, setSede] = useState(67)
+
+// In panel.tsx:
+const [sede, setSede] = useState(67)  // Diverges from filters.tsx!
+```
+
+**Do this instead:**
+```tsx
+// ✅ GOOD: Both read from the same URL params
+const search = useSearch({ from: '/energia/dashboard/panel' })
+const sedeId = typeof search.sede === 'string' ? Number(search.sede) : null
+```
+
+### 4. API client: Always read token from localStorage via `apiFetch()`
+
+**Rule:** Never hardcode tokens or access `localStorage` directly in feature code. Use `apiFetch<T>(path)` from `src/lib/api-client.ts` which handles auth automatically.
+
+```ts
+import { apiFetch } from '@/lib/api-client'
+
+export function fetchMyData() {
+  return apiFetch<MyResponseType>('/my-endpoint/')
+}
+```
+
+### 5. TanStack Query: Cache keys must include ALL variables
+
+**Rule:** `queryKey` arrays must include every parameter that affects the data. Otherwise stale data is shown.
+
+```ts
+// ✅ Correct: includes sede, panel, and dates
+const { data } = useQuery({
+  queryKey: ['consumption', sedeId, panelId, dateAfterStr, dateBeforeStr],
+  queryFn: () => fetchConsumption(sedeId, panelId, dateAfterStr, dateBeforeStr),
+  enabled: isReady,
+})
+
+// ❌ Wrong: missing date params → stale data when dates change
+queryKey: ['consumption', sedeId, panelId]
+```
+
+### 6. Custom UI components: Do NOT use empty object interfaces
+
+**Rule:** ESLint (`@typescript-eslint/no-empty-object-type`) flags interfaces that just extend another type with no additions. Use `type` instead.
+
+```ts
+// ❌ ESLint error
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+// ✅ Correct
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
+```
+
+### 7. Build, Lint, Test: Must pass before finishing
+
+**Rule:** Every change MUST pass these three commands before considering done:
+
+```bash
+pnpm build   # TypeScript + Vite build — must be clean
+pnpm lint    # ESLint — 0 errors, 0 warnings
+pnpm test --run  # All tests must pass
+```
+
+**If ESLint reports errors, fix them.** Do not disable rules blindly. Only disable rules at `eslint.config.js` level if the entire team agrees on the exception (e.g. `react-hooks/set-state-in-effect` for the URL sync pattern).
+
+### 8. No Mock Service Worker (MSW)
+
+**Rule:** This project does NOT use MSW. Tests either:
+- Hit real endpoints (for integration tests with real auth tokens)
+- Mock `vi.fn()` at the `apiFetch` level (for unit tests testing URL construction, headers, error handling)
+
+### 9. Test files: Same directory, prefixed with `-` for routes
+
+| Target | Location | Naming |
+|--------|----------|--------|
+| Any file in `src/` except routes | Same directory | `filename.test.ts` or `filename.test.tsx` |
+| Route files in `src/routes/` | Same directory | `-filename.test.tsx` (prefix with `-`) |
+
+**Why?** TanStack Router auto-generates routes from files in `src/routes/`. A file named `login.test.tsx` would be registered as a route. Prefixing with `-` makes TanStack Router ignore it.
+
+### 10. SVG Icons from API: Remove fill, force stroke currentColor
+
+**Rule:** Icons from the backend (`user.energy_modules[].icon`) are base64 SVGs. When rendering via `dangerouslySetInnerHTML`, always:
+1. Strip any `fill="..."` attributes → replace with `fill="none"`
+2. Force `stroke="currentColor"` so the icon inherits the text color
+
+```tsx
+<span
+  dangerouslySetInnerHTML={{
+    __html: svgContent
+      .replace(/fill="[^"]*"/g, 'fill="none"')
+      .replace(/stroke="[^"]*"/g, 'stroke="currentColor"'),
+  }}
+/>
 ```
 
 ---

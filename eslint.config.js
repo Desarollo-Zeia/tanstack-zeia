@@ -19,5 +19,18 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // TanStack Router files and UI primitives export both constants and components
+      'react-refresh/only-export-components': ['warn', { allowExportNames: ['Route', 'buttonVariants'] }],
+      // setState in effects is needed for legitimate state synchronization patterns
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  // TanStack Router route files intentionally export both Route and component
+  {
+    files: ['src/routes/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])
