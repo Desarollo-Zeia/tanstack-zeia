@@ -68,21 +68,23 @@ export interface DateRange {
 }
 
 export interface ConsumptionResult {
-  measurement_point_id: number
+  measurement_point_id: number | null
   measurement_point_name: string
-  device_name: string
+  device_name: string | null
   is_main: boolean
   is_active: boolean
+  is_other_loads?: boolean
+  description?: string
   consumption_kwh: number
   consumption_percentage: number
-  channel: string
-  type: string
-  capacity: string
-  hardware: string
-  first_reading_value: number
-  last_reading_value: number
-  first_reading_time: string
-  last_reading_time: string
+  channel: string | null
+  type: string | null
+  capacity: string | null
+  hardware: string | null
+  first_reading_value: number | null
+  last_reading_value: number | null
+  first_reading_time: string | null
+  last_reading_time: string | null
 }
 
 export interface ConsumptionDistributionResponse {

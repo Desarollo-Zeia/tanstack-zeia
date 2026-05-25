@@ -5,7 +5,7 @@ import { useDashboardFilters } from './use-dashboard-filters'
 
 // Mock TanStack Router
 const mockNavigate = vi.fn()
-const mockSearch: Record<string, string | undefined> = {}
+let mockSearch: Record<string, string | undefined> = {}
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
@@ -52,64 +52,56 @@ function createWrapper() {
 describe('useDashboardFilters', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Clear search params
-    Object.keys(mockSearch).forEach((key) => delete mockSearch[key])
+    mockSearch = {}
   })
 
-  it('auto-selects first active headquarter on mount', async () => {
-    const { result } = renderHook(() => useDashboardFilters(), {
+  it('auto-selects first active headquarter and panel when URL is empty', async () => {
+    renderHook(() => useDashboardFilters(), {
       wrapper: createWrapper(),
     })
 
     await waitFor(() => {
-      expect(result.current.sedeId).toBe(67)
+      expect(mockNavigate).toHaveBeenCalled()
+    })
+
+    const lastCall = mockNavigate.mock.calls[mockNavigate.mock.calls.length - 1]
+    expect(lastCall[0].search).toMatchObject({
+      sede: '67',
+      panel: '39',
     })
   })
 
-  it('auto-selects first panel of the selected headquarter', async () => {
+  it('reads initial state from URL params', async () => {
+    mockSearch = {
+      sede: '68',
+      panel: '40',
+      desde: '2026-05-01',
+      hasta: '2026-05-10',
+    }
+
     const { result } = renderHook(() => useDashboardFilters(), {
       wrapper: createWrapper(),
     })
-
-    await waitFor(() => {
-      expect(result.current.panelId).toBe(39)
-    })
-  })
-
-  it('sets default dates to today', async () => {
-    const { result } = renderHook(() => useDashboardFilters(), {
-      wrapper: createWrapper(),
-    })
-
-    await waitFor(() => {
-      expect(result.current.dateAfter).toBeInstanceOf(Date)
-      expect(result.current.dateBefore).toBeInstanceOf(Date)
-    })
-
-    const today = new Date()
-    expect(result.current.dateAfter?.getDate()).toBe(today.getDate())
-    expect(result.current.dateBefore?.getDate()).toBe(today.getDate())
-  })
-
-  it('updates panelId when sede changes', async () => {
-    const { result } = renderHook(() => useDashboardFilters(), {
-      wrapper: createWrapper(),
-    })
-
-    await waitFor(() => {
-      expect(result.current.sedeId).toBe(67)
-    })
-
-    // Change sede
-    result.current.setSedeId(68)
 
     await waitFor(() => {
       expect(result.current.sedeId).toBe(68)
-      expect(result.current.panelId).toBe(40) // First panel of Lima HQ
+      expect(result.current.panelId).toBe(40)
     })
+
+    expect(result.current.dateAfter).toBeInstanceOf(Date)
+    expect(result.current.dateBefore).toBeInstanceOf(Date)
+    expect(result.current.dateAfter?.getDate()).toBe(1)
+    expect(result.current.dateBefore?.getDate()).toBe(10)
   })
 
-  it('updates URL params when filters change', async () => {
+  it('updates URL when panel changes', async () => {
+    mockSearch = {
+      sede: '67',
+      panel: '39',
+      desde: '2026-05-01',
+      hasta: '2026-05-10',
+    }
+
     const { result } = renderHook(() => useDashboardFilters(), {
       wrapper: createWrapper(),
     })
@@ -129,28 +121,44 @@ describe('useDashboardFilters', () => {
     })
   })
 
-  it('reads initial state from URL params', async () => {
-    mockSearch.sede = '68'
-    mockSearch.panel = '40'
-    mockSearch.desde = '2026-05-01'
-    mockSearch.hasta = '2026-05-10'
+  it('resets panel and navigates when sede changes', async () => {
+    mockSearch = {
+      sede: '67',
+      panel: '34',
+      desde: '2026-05-01',
+      hasta: '2026-05-10',
+    }
 
     const { result } = renderHook(() => useDashboardFilters(), {
       wrapper: createWrapper(),
     })
 
     await waitFor(() => {
-      expect(result.current.sedeId).toBe(68)
-      expect(result.current.panelId).toBe(40)
-      expect(result.current.dateAfter).toBeInstanceOf(Date)
-      expect(result.current.dateBefore).toBeInstanceOf(Date)
+      expect(result.current.sedeId).toBe(67)
     })
 
-    expect(result.current.dateAfter?.getDate()).toBe(1)
-    expect(result.current.dateBefore?.getDate()).toBe(10)
+    result.current.setSedeId(68)
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search: expect.objectContaining({
+            sede: '68',
+            panel: undefined,
+          }),
+        })
+      )
+    })
   })
 
-  it('reports isReady when all filters are set', async () => {
+  it('reports isReady when all filters are set in URL', async () => {
+    mockSearch = {
+      sede: '67',
+      panel: '39',
+      desde: '2026-05-01',
+      hasta: '2026-05-10',
+    }
+
     const { result } = renderHook(() => useDashboardFilters(), {
       wrapper: createWrapper(),
     })
@@ -158,5 +166,32 @@ describe('useDashboardFilters', () => {
     await waitFor(() => {
       expect(result.current.isReady).toBe(true)
     })
+  })
+
+  it('reports isReady false when URL params are missing', async () => {
+    mockSearch = {}
+
+    const { result } = renderHook(() => useDashboardFilters(), {
+      wrapper: createWrapper(),
+    })
+
+    // Before auto-select navigation completes
+    expect(result.current.isReady).toBe(false)
+  })
+
+  it('does not auto-select again after initial navigation', async () => {
+    mockSearch = {}
+
+    renderHook(() => useDashboardFilters(), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledTimes(1)
+    })
+
+    // Wait a bit and ensure no additional navigations
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(mockNavigate).toHaveBeenCalledTimes(1)
   })
 })
