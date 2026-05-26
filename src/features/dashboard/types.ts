@@ -60,6 +60,30 @@ export interface MeasurementPointsResponse {
   results: PanelWithDevices[]
 }
 
+// Device Measurement Points List
+export interface DeviceMeasurementPoint {
+  id: number
+  name: string
+  is_active: boolean
+  channel: string
+  type: string
+  key: string
+  capacity: string
+  hardware: string
+  device: string
+  dev_eui: string
+  electrical_panel: string
+  location_reference: string
+  installation_date: string | null
+}
+
+export interface DeviceMeasurementPointsListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: DeviceMeasurementPoint[]
+}
+
 // Consumption Distribution
 export interface DateRange {
   type: string
@@ -96,3 +120,47 @@ export interface ConsumptionDistributionResponse {
   date_range: DateRange
   results: ConsumptionResult[]
 }
+
+// Readings
+export interface ReadingDevice {
+  id: number
+  name: string
+  model: string
+  dev_eui: string
+}
+
+export interface ReadingIndicators {
+  id: number
+  values: Record<string, number>
+  measurement_point_name: string
+}
+
+export interface Reading {
+  created_at: string
+  device: ReadingDevice
+  indicators: ReadingIndicators
+}
+
+export interface ReadingsResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: Reading[]
+}
+
+// Readings Graph
+export interface ReadingGraphPoint {
+  period: string
+  first_reading: string
+  last_reading: string
+  indicator: string
+  unit: string
+  first_value: number
+  last_value: number
+  difference: number | null
+  device: string
+  measurement_point: string
+}
+
+// Readings Graph endpoint returns a plain array, not a wrapped response
+export type ReadingsGraphResponse = ReadingGraphPoint[]

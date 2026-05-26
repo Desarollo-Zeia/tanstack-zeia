@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { Zap, Activity, Gauge, BarChart3 } from 'lucide-react'
+import { Gauge, BarChart3 } from 'lucide-react'
 import { DashboardShell } from '@/features/dashboard/components/shell'
 import { DashboardFilters } from '@/features/dashboard/components/filters'
 import { useDashboardFilters } from '@/features/dashboard/hooks/use-dashboard-filters'
 import { fetchConsumptionDistribution } from '@/features/dashboard/api/consumption'
 import { ConsumptionPieChart } from '@/features/dashboard/components/consumption-pie-chart'
 import { ConsumptionDistributionList } from '@/features/dashboard/components/consumption-distribution-list'
+import { MeasurementPointsTable } from '@/features/dashboard/components/measurement-points-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDateISO } from '@/lib/date-utils'
 
@@ -26,31 +27,16 @@ export function PanelPage() {
     enabled: isReady,
   })
 
-  const mainPoint = consumptionData?.results.find((r) => r.is_main)
   const topConsumer = consumptionData?.results
     .filter((r) => !r.is_main)
     .sort((a, b) => b.consumption_kwh - a.consumption_kwh)[0]
 
   const kpis = [
     {
-      title: 'Consumo Total',
-      value: consumptionData ? `${consumptionData.main_consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })} kWh` : '—',
-      subtitle: 'Panel principal',
-      icon: Activity,
-      isLoading: isLoadingConsumption,
-    },
-    {
       title: 'Puntos de Medición',
       value: consumptionData ? String(consumptionData.total_measurement_points) : '—',
       subtitle: 'Dispositivos activos',
       icon: Gauge,
-      isLoading: isLoadingConsumption,
-    },
-    {
-      title: mainPoint?.measurement_point_name ?? 'Punto Principal',
-      value: mainPoint ? `${mainPoint.consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })} kWh` : '—',
-      subtitle: mainPoint ? `${mainPoint.consumption_percentage.toFixed(1)}% del total` : '—',
-      icon: Zap,
       isLoading: isLoadingConsumption,
     },
     {
@@ -73,7 +59,7 @@ export function PanelPage() {
           <DashboardFilters />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
           {kpis.map((kpi, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -147,6 +133,13 @@ export function PanelPage() {
             )}
           </CardContent>
         </Card>
+
+        {sedeId && panelId && (
+          <MeasurementPointsTable
+            headquarterId={sedeId}
+            panelId={panelId}
+          />
+        )}
       </div>
     </DashboardShell>
   )

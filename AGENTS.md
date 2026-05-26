@@ -333,110 +333,196 @@ interface AuthResponse {
 - **Format**: `{ token: string, user: User }`
 - **Storage**: `localStorage`
 
-### Dashboard Data Endpoints
+## Data Fetching Standards
 
-**Base URL:** `https://api.energy.zeia.com.pe/api/v1`
-**Auth:** `Authorization: Token {token}` header required for all endpoints
+This project follows a strict pattern for data fetching, query state, loading UI, and URL-driven filters. **All dashboard modules must follow these standards.** The reference implementation is `src/routes/energia/dashboard/panel.tsx`.
 
-#### 1. List User Headquarters
+### 1. URL as Source of Truth for Filters
+
+Dashboard filters (sede, panel, dates, etc.) are **shared across components** and must live in the URL, NOT in React state.
+
+- Each route defines `validateSearch` to parse and type URL params.
+- Both the filter bar and the page content read from `useSearch()`.
+- Filter handlers call `navigate({ search: { ... } })` to update the URL.
+
+```tsx
+// Route file
+export const Route = createFileRoute('/energia/dashboard/panel')({
+  component: PanelPage,
+  validateSearch: (search) => ({
+    sede: typeof search.sede === 'string' ? search.sede : undefined,
+    panel: typeof search.panel === 'string' ? search.panel : undefined,
+    desde: typeof search.desde === 'string' ? search.desde : undefined,
+    hasta: typeof search.hasta === 'string' ? search.hasta : undefined,
+  }),
+})
+
+// Page component
+const search = useSearch({ from: '/energia/dashboard/panel' })
+const sedeId = typeof search.sede === 'string' ? Number(search.sede) : null
 ```
-GET /user/headquarters/
-```
-Returns all headquarters (sedes) accessible to the logged-in user, including their electrical panels.
 
-**Response:**
-```typescript
-interface HeadquartersResponse {
-  count: number
-  results: Array<{
-    id: number
-    name: string
-    is_active: boolean
-    electrical_panels: Array<{
-      id: number
-      name: string
-      is_active: boolean
-      type: string
-      threads: number
-    }>
-    powers: Array<{
-      id: number
-      power_installed: number | null
-      power_contracted: number | null
-      power_max: number | null
-    }>
-  }>
+**Never do this:**
+```tsx
+// ❌ BAD: local useState diverges between components
+const [sede, setSede] = useState(67)
+```
+
+### 2. Filter Hook Pattern
+
+Each module that needs filters creates its own hook in `features/{module}/hooks/use-{module}-filters.ts`. It:
+
+1. Reads filter values from `useSearch()`
+2. Fetches reference data (e.g., headquarters) via `useQuery`
+3. Auto-selects defaults on mount if URL params are missing
+4. Exposes `isReady` (all required params present)
+5. Provides typed handlers that navigate to update the URL
+
+**Note:** The auto-selection logic uses `useEffect` + `useRef` to avoid loops. This is the **only** valid exception to the "no setState in useEffect" rule (see Rule #1 in Codebase Rules).
+
+### 3. API Functions
+
+Place pure async functions in `features/{module}/api/*.ts`. They:
+
+- Accept typed arguments (never read from URL or state directly)
+- Build query strings and paths
+- Delegate the actual fetch to `apiFetch<T>()` from `src/lib/api-client.ts`
+
+```ts
+export function fetchConsumptionDistribution(
+  headquarterId: number,
+  panelId: number,
+  dateAfter: string,
+  dateBefore: string
+): Promise<ConsumptionDistributionResponse> {
+  const params = new URLSearchParams({ date_after: dateAfter, date_before: dateBefore })
+  return apiFetch<ConsumptionDistributionResponse>(
+    `/headquarter/${headquarterId}/electrical_panel/${panelId}/consumption-distribution/?${params.toString()}`
+  )
 }
 ```
 
-#### 2. List Measurement Points by Headquarter
-```
-GET /headquarter/{headquarter_id}/measurement-points/
-```
-Returns all electrical panels, devices, and measurement points for a specific headquarter.
+**Do NOT access `localStorage` directly in feature code.** `apiFetch` handles auth automatically.
 
-**Response:**
-```typescript
-interface MeasurementPointsResponse {
-  count: number
-  results: Array<{
-    id: number
-    name: string
-    is_active: boolean
-    type: string
-    threads: number
-    devices: Array<{
-      id: number
-      name: string
-      dev_eui: string
-      measurement_points: Array<{
-        id: number
-        name: string
-        is_active: boolean
-        channel: string
-        type: string
-        capacity: string
-        hardware: string | null
-      }>
-    }>
-  }>
-}
+### 4. TanStack Query Rules
+
+- **Cache keys must include ALL variables** that affect the response.
+- Use `enabled: isReady` to prevent firing requests with missing params.
+- Never build `queryKey` or `queryFn` that depend on incomplete state.
+
+```ts
+const { data, isLoading } = useQuery({
+  queryKey: ['consumption-distribution', sedeId, panelId, dateAfterStr, dateBeforeStr],
+  queryFn: () => fetchConsumptionDistribution(sedeId!, panelId!, dateAfterStr, dateBeforeStr),
+  enabled: isReady,
+})
 ```
 
-#### 3. Consumption Distribution by Panel
-```
-GET /headquarter/{headquarter_id}/electrical_panel/{panel_id}/consumption-distribution/?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
-```
-Returns energy consumption breakdown by measurement point for a specific panel and date range.
+### 5. Loading States & Empty States
 
-**Response:**
-```typescript
-interface ConsumptionDistributionResponse {
-  headquarter_id: number
-  electrical_panel_id: number
-  electrical_panel_name: string
-  main_consumption_kwh: number
-  total_measurement_points: number
-  date_range: {
-    type: string
-    start_date: string
-    end_date: string
-  }
-  results: Array<{
-    measurement_point_id: number
-    measurement_point_name: string
-    device_name: string
-    is_main: boolean
-    consumption_kwh: number
-    consumption_percentage: number
-    capacity: string
-    first_reading_value: number
-    last_reading_value: number
-    first_reading_time: string
-    last_reading_time: string
-  }>
-}
+Every module must handle three UI states explicitly:
+
+| State | Pattern |
+|-------|---------|
+| **Loading filters** | Skeleton pulse in filter controls (see `filters.tsx`) |
+| **Loading data** | Centered spinner with "Cargando datos..." in the content area |
+| **Empty / no selection** | Centered message with icon guiding the user to select filters |
+| **Error** | Inline message or toast (do not crash the page) |
+
+KPI cards must show skeleton placeholders while their data is loading:
+
+```tsx
+{kpi.isLoading ? (
+  <div className="space-y-2">
+    <div className="h-8 w-3/4 bg-muted rounded animate-pulse" />
+    <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+  </div>
+) : (
+  <div className="text-2xl font-bold text-text-primary">{kpi.value}</div>
+)}
 ```
+
+### 6. Extending Filters
+
+The standard supports additional filters beyond sede/panel/dates:
+
+- Add them to `validateSearch` in the route file.
+- Add them to the hook's return type and handlers.
+- Include them in the `queryKey` array.
+
+> **For specific endpoint details** (URLs, query params, response types), see the `README.md` inside each feature's `api/` folder:
+> - `src/features/dashboard/api/README.md`
+> - `src/features/auth/api/README.md`
+
+---
+
+## Protocolo de Comunicación: @Z-MOD / @Z-SEC
+
+Use these keywords to request new dashboard work. After you send the keyword, I will ask the follow-up questions needed to proceed.
+
+### @Z-MOD — Nuevo Módulo Completo
+
+Use when you want a **new full page** with all its sections.
+
+**What happens next:** I will ask for:
+1. **Route path** — Where in `/energia/dashboard/...`
+2. **Global filters** — Which of the standard filters apply (sede, panel, dates, others)
+3. **Page layout** — High-level structure (KPIs row, main chart, side table, etc.)
+4. **Sections** — One by one:
+   - Position on the page
+   - Endpoint (reference the `README.md` in the feature's `api/` folder or provide a new one)
+   - What data to render and how
+5. **Loading & empty states** — Any custom behavior beyond the standard
+
+### @Z-SEC — Agregar Sección a Módulo Existente
+
+Use when you want to **add a new section** to a page that already exists.
+
+**What happens next:** I will ask for:
+1. **Target module** — Which existing route
+2. **Position** — Where on the page (above, below, left, right of existing sections)
+3. **Endpoint** — Same as above
+4. **Data & UI** — What to render
+5. **Filters interaction** — Does this section use the same filters or need new ones?
+
+### @Z-LIST — Listar Secciones de un Módulo
+
+Use when you want to know **what sections a module currently has**.
+
+**What happens next:** I will ask for:
+1. **Target module** — Which route (e.g., `/energia/dashboard/panel`)
+
+Then I will reply with the list of sections registered for that module.
+
+---
+
+## Dashboard Module Sections Registry
+
+| Module | Route | Sections |
+|--------|-------|----------|
+| Panel Dashboard | `/energia/dashboard/panel` | Filter Bar, KPI Row, Split View (Chart Section + Data List), Data Table |
+| Análisis por Indicador | `/energia/dashboard/home` | Filter Bar, Split View (Readings Table + Readings Graph) |
+| Monitoreo de Potencia | `/energia/dashboard/monitoreo` | (pending) |
+| Desbalance de Carga | `/energia/dashboard/desbalance` | (pending) |
+| Consumo Tarifario | `/energia/dashboard/tarifario` | (pending) |
+| Comparación por Día | `/energia/dashboard/comparador` | (pending) |
+
+> **Note:** `(pending)` modules have no sections yet. They will be filled as they are built via `@Z-MOD`.
+
+---
+
+## Section Taxonomy (Dashboard UI)
+
+| Section Name | Description | Typical Content |
+|--------------|-------------|-----------------|
+| **Filter Bar** | Horizontal controls row | Selects, date pickers, toggles |
+| **KPI Row** | Horizontal row of metric cards | 2–6 cards with value + label |
+| **Chart Section** | Visualization container | Pie, bar, line, area charts |
+| **Data List** | Read-only list of items | Rows with labels, values, percentages |
+| **Data Table** | Structured table with headers | Sortable columns, pagination |
+| **Split View** | Two-column layout inside a card | Chart + List, or two charts |
+| **Summary Card** | Large card with context | Descriptions, alerts, summaries |
+| **Timeline** | Chronological event list | Logs, readings, notifications |
 
 ---
 
