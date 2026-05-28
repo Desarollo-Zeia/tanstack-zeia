@@ -111,6 +111,7 @@ All energy-related routes use the `/energia/` prefix (matching the API response)
 | `/energia/dashboard/desbalance` | `src/routes/energia/dashboard/desbalance.tsx` | Desbalance de Carga |
 | `/energia/dashboard/tarifario` | `src/routes/energia/dashboard/tarifario.tsx` | Consumo Tarifario |
 | `/energia/dashboard/comparador` | `src/routes/energia/dashboard/comparador.tsx` | Comparación por Día |
+| `/energia/dashboard/alertas` | `src/routes/energia/dashboard/alertas.tsx` | Alertas |
 
 **Note**: The old routes `/login`, `/dashboard/*` have been REMOVED.
 
@@ -506,6 +507,7 @@ Then I will reply with the list of sections registered for that module.
 | Desbalance de Carga | `/energia/dashboard/desbalance` | (pending) |
 | Consumo Tarifario | `/energia/dashboard/tarifario` | (pending) |
 | Comparación por Día | `/energia/dashboard/comparador` | (pending) |
+| Alertas | `/energia/dashboard/alertas` | Filter Bar, Summary Card (panel name + today_count), Alerts Table (indicador, sub indicador, origen, fecha, hora, límite, valor) |
 
 > **Note:** `(pending)` modules have no sections yet. They will be filled as they are built via `@Z-MOD`.
 

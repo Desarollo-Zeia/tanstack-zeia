@@ -50,6 +50,8 @@ export function useComparadorFilters() {
   }, [measurementPointsData])
 
   const hasAutoSelected = useRef(false)
+  const hasAutoSelectedPunto = useRef(false)
+  const lastPanelIdForPunto = useRef<number | null>(null)
 
   useEffect(() => {
     if (hasAutoSelected.current) return
@@ -67,17 +69,11 @@ export function useComparadorFilters() {
     const targetDateAfter = dateAfter ?? today
     const targetDateBefore = dateBefore ?? today
 
-    const targetPuntoId =
-      puntoId ??
-      (measurementPoints.length > 0 ? measurementPoints[0]?.id : null) ??
-      null
-
     const needsNavigation =
       sedeId !== targetSedeId ||
       panelId !== targetPanelId ||
       dateAfter?.getTime() !== targetDateAfter.getTime() ||
-      dateBefore?.getTime() !== targetDateBefore.getTime() ||
-      puntoId !== targetPuntoId
+      dateBefore?.getTime() !== targetDateBefore.getTime()
 
     if (needsNavigation) {
       hasAutoSelected.current = true
@@ -85,7 +81,7 @@ export function useComparadorFilters() {
         search: {
           sede: String(targetSedeId),
           panel: targetPanelId ? String(targetPanelId) : undefined,
-          punto: targetPuntoId ? String(targetPuntoId) : undefined,
+          punto: undefined,
           desde: formatDateISO(targetDateAfter),
           hasta: formatDateISO(targetDateBefore),
         },
@@ -95,13 +91,36 @@ export function useComparadorFilters() {
     headquarters,
     sedeId,
     panelId,
-    puntoId,
     dateAfter,
     dateBefore,
     today,
     navigate,
-    measurementPoints,
   ])
+
+  useEffect(() => {
+    if (panelId !== lastPanelIdForPunto.current) {
+      hasAutoSelectedPunto.current = false
+      lastPanelIdForPunto.current = panelId
+    }
+
+    if (hasAutoSelectedPunto.current) return
+    if (puntoId !== null) {
+      hasAutoSelectedPunto.current = true
+      return
+    }
+    if (measurementPoints.length === 0) return
+
+    hasAutoSelectedPunto.current = true
+    navigate({
+      search: {
+        sede: String(sedeId),
+        panel: String(panelId),
+        punto: String(measurementPoints[0].id),
+        desde: formatDateISO(dateAfter ?? today),
+        hasta: formatDateISO(dateBefore ?? today),
+      },
+    })
+  }, [measurementPoints, puntoId, panelId, sedeId, dateAfter, dateBefore, today, navigate])
 
   const setSedeId = useCallback(
     (id: number) => {

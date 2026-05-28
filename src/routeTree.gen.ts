@@ -18,6 +18,7 @@ import { Route as EnergiaDashboardMonitoreoRouteImport } from './routes/energia/
 import { Route as EnergiaDashboardHomeRouteImport } from './routes/energia/dashboard/home'
 import { Route as EnergiaDashboardDesbalanceRouteImport } from './routes/energia/dashboard/desbalance'
 import { Route as EnergiaDashboardComparadorRouteImport } from './routes/energia/dashboard/comparador'
+import { Route as EnergiaDashboardAlertasRouteImport } from './routes/energia/dashboard/alertas'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -68,11 +69,17 @@ const EnergiaDashboardComparadorRoute =
     path: '/energia/dashboard/comparador',
     getParentRoute: () => rootRouteImport,
   } as any)
+const EnergiaDashboardAlertasRoute = EnergiaDashboardAlertasRouteImport.update({
+  id: '/energia/dashboard/alertas',
+  path: '/energia/dashboard/alertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/energia/login': typeof EnergiaLoginRoute
+  '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
   '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRoute
   '/energia/dashboard/home': typeof EnergiaDashboardHomeRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/energia/login': typeof EnergiaLoginRoute
+  '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
   '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRoute
   '/energia/dashboard/home': typeof EnergiaDashboardHomeRoute
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/energia/login': typeof EnergiaLoginRoute
+  '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
   '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRoute
   '/energia/dashboard/home': typeof EnergiaDashboardHomeRoute
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/energia/login'
+    | '/energia/dashboard/alertas'
     | '/energia/dashboard/comparador'
     | '/energia/dashboard/desbalance'
     | '/energia/dashboard/home'
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/energia/login'
+    | '/energia/dashboard/alertas'
     | '/energia/dashboard/comparador'
     | '/energia/dashboard/desbalance'
     | '/energia/dashboard/home'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/energia/login'
+    | '/energia/dashboard/alertas'
     | '/energia/dashboard/comparador'
     | '/energia/dashboard/desbalance'
     | '/energia/dashboard/home'
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProfileRoute: typeof ProfileRoute
   EnergiaLoginRoute: typeof EnergiaLoginRoute
+  EnergiaDashboardAlertasRoute: typeof EnergiaDashboardAlertasRoute
   EnergiaDashboardComparadorRoute: typeof EnergiaDashboardComparadorRoute
   EnergiaDashboardDesbalanceRoute: typeof EnergiaDashboardDesbalanceRoute
   EnergiaDashboardHomeRoute: typeof EnergiaDashboardHomeRoute
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EnergiaDashboardComparadorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/energia/dashboard/alertas': {
+      id: '/energia/dashboard/alertas'
+      path: '/energia/dashboard/alertas'
+      fullPath: '/energia/dashboard/alertas'
+      preLoaderRoute: typeof EnergiaDashboardAlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProfileRoute: ProfileRoute,
   EnergiaLoginRoute: EnergiaLoginRoute,
+  EnergiaDashboardAlertasRoute: EnergiaDashboardAlertasRoute,
   EnergiaDashboardComparadorRoute: EnergiaDashboardComparadorRoute,
   EnergiaDashboardDesbalanceRoute: EnergiaDashboardDesbalanceRoute,
   EnergiaDashboardHomeRoute: EnergiaDashboardHomeRoute,
