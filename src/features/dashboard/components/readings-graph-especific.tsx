@@ -47,7 +47,7 @@ function formatTimeLabel(timeStr: string): string {
 }
 
 function formatDateLong(dateStr: string): string {
-  if (dateStr === 'habitual') return 'Promedio habitual'
+  if (dateStr === 'habitual') return 'Consumo habitual'
   const date = new Date(dateStr + 'T00:00:00')
   const formatted = date.toLocaleDateString('es-PE', {
     weekday: 'long',
@@ -109,8 +109,13 @@ export function ReadingsGraphEspecific({
     }
   }, [dates, visibleDates.size])
 
+  const allDatesVisible = dates.length > 0 && dates.every((d) => visibleDates.has(d))
+
   const toggleDate = (date: string) => {
     setVisibleDates((prev) => {
+      if (allDatesVisible) {
+        return new Set([date])
+      }
       const next = new Set(prev)
       if (next.has(date)) {
         next.delete(date)
@@ -119,6 +124,10 @@ export function ReadingsGraphEspecific({
       }
       return next
     })
+  }
+
+  const showAllDates = () => {
+    setVisibleDates(new Set(dates))
   }
 
   const chartData: ChartData<'line'> = useMemo(() => {
@@ -134,8 +143,10 @@ export function ReadingsGraphEspecific({
 
     const datasets = dates
       .filter((date) => visibleDates.has(date))
-      .map((date, index) => {
-        const color = LINE_COLORS[index % LINE_COLORS.length]
+      .map((date) => {
+        const isHabitual = date === 'habitual'
+        const nonHabitualIndex = dates.filter((d) => d !== 'habitual').indexOf(date)
+        const color = isHabitual ? '#000000' : LINE_COLORS[nonHabitualIndex % LINE_COLORS.length]
         const entries = dataMap[date] ?? []
         const timeValueMap = new Map<string, number>()
         for (const entry of entries) {
@@ -146,10 +157,11 @@ export function ReadingsGraphEspecific({
           label: formatDateLong(date),
           data: sortedTimes.map((time) => timeValueMap.get(time) ?? null),
           borderColor: color,
-          backgroundColor: color + '1A',
-          borderWidth: 2,
-          pointRadius: 2,
-          pointHoverRadius: 5,
+          backgroundColor: isHabitual ? 'transparent' : color + '1A',
+          borderWidth: isHabitual ? 3.5 : 2,
+          borderDash: isHabitual ? [8, 4] : [],
+          pointRadius: isHabitual ? 0 : 2,
+          pointHoverRadius: isHabitual ? 4 : 5,
           tension: 0.3,
           fill: false,
           spanGaps: true,
@@ -244,10 +256,22 @@ export function ReadingsGraphEspecific({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Comparación por Día</CardTitle>
-        <CardDescription>
-          Comparativa de lecturas entre diferentes fechas
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Comparación por Día</CardTitle>
+            <CardDescription>
+              Comparativa de lecturas entre diferentes fechas
+            </CardDescription>
+          </div>
+          {!allDatesVisible && (
+            <button
+              onClick={showAllDates}
+              className="text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+            >
+              Mostrar todas
+            </button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -266,50 +290,94 @@ export function ReadingsGraphEspecific({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-3 p-3 bg-muted/30 rounded-lg">
-              {dates.map((date, index) => {
-                const color = LINE_COLORS[index % LINE_COLORS.length]
-                const isVisible = visibleDates.has(date)
-                return (
-                  <label
-                    key={date}
-                    className="flex items-center gap-2 cursor-pointer select-none"
-                  >
+            <div className="space-y-3">
+              {dates.includes('habitual') && (
+                <div className="flex items-center gap-3 p-3 bg-black/5 rounded-lg border border-black/10">
+                  <label className="flex items-center gap-3 cursor-pointer select-none hover:bg-black/5 transition-colors rounded px-2 py-1 -mx-2 -my-1">
                     <input
                       type="checkbox"
-                      checked={isVisible}
-                      onChange={() => toggleDate(date)}
+                      checked={visibleDates.has('habitual')}
+                      onChange={() => toggleDate('habitual')}
                       className="sr-only"
                     />
                     <span
-                      className="w-4 h-4 rounded border-2 flex items-center justify-center"
+                      className="relative w-10 h-5 rounded-full transition-colors"
                       style={{
-                        borderColor: color,
-                        backgroundColor: isVisible ? color : 'transparent',
+                        backgroundColor: visibleDates.has('habitual') ? '#000000' : '#d1d5db',
                       }}
                     >
-                      {isVisible && (
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      )}
+                      <span
+                        className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm"
+                        style={{
+                          transform: visibleDates.has('habitual') ? 'translateX(20px)' : 'translateX(0)',
+                        }}
+                      />
                     </span>
-                    <span className="text-sm text-text-secondary">
-                      {formatDateLong(date)}
+                    <span
+                      className="w-6 h-1 rounded"
+                      style={{
+                        backgroundImage: 'repeating-linear-gradient(to right, #000 0, #000 5px, transparent 5px, transparent 8px)',
+                        opacity: visibleDates.has('habitual') ? 1 : 0.3,
+                      }}
+                    />
+                    <span
+                      className="text-sm font-semibold text-black"
+                      style={{ opacity: visibleDates.has('habitual') ? 1 : 0.5 }}
+                    >
+                      Consumo habitual
                     </span>
                   </label>
-                )
-              })}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-3 p-3 bg-muted/30 rounded-lg">
+                {dates.filter((d) => d !== 'habitual').map((date, index) => {
+                  const color = LINE_COLORS[index % LINE_COLORS.length]
+                  const isVisible = visibleDates.has(date)
+                  return (
+                    <label
+                      key={date}
+                      className="flex items-center gap-2 cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isVisible}
+                        onChange={() => toggleDate(date)}
+                        className="sr-only"
+                      />
+                      <span
+                        className="w-4 h-4 rounded border-2 flex items-center justify-center"
+                        style={{
+                          borderColor: color,
+                          backgroundColor: isVisible ? color : 'transparent',
+                        }}
+                      >
+                        {isVisible && (
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </span>
+                      <span
+                        className="text-sm text-text-secondary"
+                        style={{ opacity: isVisible ? 1 : 0.5 }}
+                      >
+                        {formatDateLong(date)}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
             </div>
 
             <div className="h-[400px]">

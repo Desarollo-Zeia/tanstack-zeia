@@ -178,7 +178,16 @@ export interface PowerGraphPoint {
   unit: string
 }
 
-export type PowerGraphResponse = PowerGraphPoint[]
+export interface PowerThresholds {
+  power_max: number | null
+  power_contracted: number | null
+  power_installed: number | null
+}
+
+export interface PowerGraphResponse {
+  power_thresholds: PowerThresholds
+  results: PowerGraphPoint[]
+}
 
 // Unbalanced Current Counters Graph
 export interface UnbalancedCurrentCounter {
@@ -235,3 +244,27 @@ export interface ReadingsGraphEspecificEntry {
 
 export type ReadingsGraphEspecificData = Record<string, ReadingsGraphEspecificEntry[]>
 export type ReadingsGraphEspecificResponse = ReadingsGraphEspecificData[]
+
+// Alerts (latest by subtype)
+export interface AlertItem {
+  id: number
+  indicator_name: string
+  subindicator_name: string
+  origin: string
+  date: string
+  time: string
+  limit: number
+  value: number
+  device_id: number
+  device_name: string
+  measurement_point_id: number
+  measurement_point_name: string
+  status: string
+  alert_status: string
+  notes: string
+}
+
+export interface AlertsLatestBySubtypeResponse {
+  today_count: number
+  results: AlertItem[]
+}

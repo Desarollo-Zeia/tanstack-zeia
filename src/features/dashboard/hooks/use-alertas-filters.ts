@@ -5,28 +5,18 @@ import { fetchHeadquarters } from '../api/headquarters'
 import { fetchDeviceMeasurementPointsList } from '../api/measurement-points'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
 
-export const VALID_CATEGORIES = ['power', 'energy', 'current', 'voltage'] as const
-export type Category = (typeof VALID_CATEGORIES)[number]
+export function useAlertasFilters() {
+  const navigate = useNavigate({ from: '/energia/dashboard/alertas' })
+  const search = useSearch({ from: '/energia/dashboard/alertas' })
 
-export function useHomeFilters() {
-  const navigate = useNavigate({ from: '/energia/dashboard/home' })
-  const search = useSearch({ from: '/energia/dashboard/home' })
-
-  // Read ALL state directly from URL — single source of truth
   const sedeId = typeof search.sede === 'string' ? Number(search.sede) : null
   const panelId = typeof search.panel === 'string' ? Number(search.panel) : null
   const puntoId = typeof search.punto === 'string' ? Number(search.punto) : null
-  const category =
-    typeof search.categoria === 'string' && VALID_CATEGORIES.includes(search.categoria as Category)
-      ? (search.categoria as Category)
-      : null
-  const page = typeof search.pagina === 'string' ? Number(search.pagina) : 1
   const dateAfter = parseDateSafe(typeof search.desde === 'string' ? search.desde : undefined)
   const dateBefore = parseDateSafe(typeof search.hasta === 'string' ? search.hasta : undefined)
 
   const today = useMemo(() => new Date(), [])
 
-  // Fetch headquarters
   const { data: headquartersData, isLoading: isLoadingHeadquarters } = useQuery({
     queryKey: ['headquarters'],
     queryFn: fetchHeadquarters,
@@ -34,7 +24,6 @@ export function useHomeFilters() {
 
   const headquarters = useMemo(() => headquartersData?.results ?? [], [headquartersData])
 
-  // Derived: current headquarter and panels
   const currentHeadquarter = useMemo(() => {
     return headquarters.find((h) => h.id === sedeId) ?? null
   }, [headquarters, sedeId])
@@ -47,7 +36,6 @@ export function useHomeFilters() {
     return panels.find((p) => p.id === panelId) ?? null
   }, [panels, panelId])
 
-  // Fetch measurement points for current panel
   const { data: measurementPointsData, isLoading: isLoadingMeasurementPoints } = useQuery({
     queryKey: ['device-measurement-points-list', sedeId, panelId],
     queryFn: () => {
@@ -61,7 +49,6 @@ export function useHomeFilters() {
     return measurementPointsData?.results.filter((mp) => mp.is_active) ?? []
   }, [measurementPointsData])
 
-  // Auto-select: if URL is missing values, navigate to defaults
   const hasAutoSelected = useRef(false)
   const hasAutoSelectedPunto = useRef(false)
   const lastPanelIdForPunto = useRef<number | null>(null)
@@ -82,17 +69,11 @@ export function useHomeFilters() {
     const targetDateAfter = dateAfter ?? today
     const targetDateBefore = dateBefore ?? today
 
-    const targetCategory = category ?? 'power'
-
-    const targetPage = page ?? 1
-
     const needsNavigation =
       sedeId !== targetSedeId ||
       panelId !== targetPanelId ||
       dateAfter?.getTime() !== targetDateAfter.getTime() ||
-      dateBefore?.getTime() !== targetDateBefore.getTime() ||
-      category !== targetCategory ||
-      page !== targetPage
+      dateBefore?.getTime() !== targetDateBefore.getTime()
 
     if (needsNavigation) {
       hasAutoSelected.current = true
@@ -101,8 +82,6 @@ export function useHomeFilters() {
           sede: String(targetSedeId),
           panel: targetPanelId ? String(targetPanelId) : undefined,
           punto: undefined,
-          categoria: targetCategory,
-          pagina: targetPage > 1 ? String(targetPage) : undefined,
           desde: formatDateISO(targetDateAfter),
           hasta: formatDateISO(targetDateBefore),
         },
@@ -112,8 +91,6 @@ export function useHomeFilters() {
     headquarters,
     sedeId,
     panelId,
-    category,
-    page,
     dateAfter,
     dateBefore,
     today,
@@ -139,15 +116,12 @@ export function useHomeFilters() {
         sede: String(sedeId),
         panel: String(panelId),
         punto: String(measurementPoints[0].id),
-        categoria: category ?? 'power',
-        pagina: page > 1 ? String(page) : undefined,
         desde: formatDateISO(dateAfter ?? today),
         hasta: formatDateISO(dateBefore ?? today),
       },
     })
-  }, [measurementPoints, puntoId, panelId, sedeId, category, page, dateAfter, dateBefore, today, navigate])
+  }, [measurementPoints, puntoId, panelId, sedeId, dateAfter, dateBefore, today, navigate])
 
-  // Handlers — just navigate, no local state
   const setSedeId = useCallback(
     (id: number) => {
       navigate({
@@ -155,14 +129,12 @@ export function useHomeFilters() {
           sede: String(id),
           panel: undefined,
           punto: undefined,
-          categoria: category ?? 'power',
-          pagina: undefined,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
         },
       })
     },
-    [navigate, category, dateAfter, dateBefore, today]
+    [navigate, dateAfter, dateBefore, today]
   )
 
   const setPanelId = useCallback(
@@ -172,14 +144,12 @@ export function useHomeFilters() {
           sede: String(sedeId),
           panel: String(id),
           punto: undefined,
-          categoria: category ?? 'power',
-          pagina: undefined,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
         },
       })
     },
-    [navigate, sedeId, category, dateAfter, dateBefore, today]
+    [navigate, sedeId, dateAfter, dateBefore, today]
   )
 
   const setPuntoId = useCallback(
@@ -189,31 +159,12 @@ export function useHomeFilters() {
           sede: String(sedeId),
           panel: String(panelId),
           punto: String(id),
-          categoria: category ?? 'power',
-          pagina: undefined,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
         },
       })
     },
-    [navigate, sedeId, panelId, category, dateAfter, dateBefore, today]
-  )
-
-  const setCategory = useCallback(
-    (cat: Category) => {
-      navigate({
-        search: {
-          sede: String(sedeId),
-          panel: String(panelId),
-          punto: String(puntoId),
-          categoria: cat,
-          pagina: undefined,
-          desde: formatDateISO(dateAfter ?? today),
-          hasta: formatDateISO(dateBefore ?? today),
-        },
-      })
-    },
-    [navigate, sedeId, panelId, puntoId, dateAfter, dateBefore, today]
+    [navigate, sedeId, panelId, dateAfter, dateBefore, today]
   )
 
   const setDateRange = useCallback(
@@ -223,61 +174,31 @@ export function useHomeFilters() {
           sede: String(sedeId),
           panel: String(panelId),
           punto: String(puntoId),
-          categoria: category ?? 'power',
-          pagina: undefined,
           desde: formatDateISO(range.startDate),
           hasta: formatDateISO(range.endDate),
         },
       })
     },
-    [navigate, sedeId, panelId, puntoId, category]
+    [navigate, sedeId, panelId, puntoId]
   )
 
-  const setPage = useCallback(
-    (newPage: number) => {
-      navigate({
-        search: {
-          sede: String(sedeId),
-          panel: String(panelId),
-          punto: String(puntoId),
-          categoria: category ?? 'power',
-          pagina: newPage > 1 ? String(newPage) : undefined,
-          desde: formatDateISO(dateAfter ?? today),
-          hasta: formatDateISO(dateBefore ?? today),
-        },
-      })
-    },
-    [navigate, sedeId, panelId, puntoId, category, dateAfter, dateBefore, today]
-  )
-
-  const isReady = !!sedeId && !!panelId && !!puntoId && !!dateAfter && !!dateBefore && !!category
+  const isReady = !!sedeId && !!panelId && !!puntoId && !!dateAfter && !!dateBefore
 
   return {
-    // Data
     headquarters,
     panels,
     measurementPoints,
     currentHeadquarter,
     currentPanel,
-
-    // State (from URL)
     sedeId,
     panelId,
     puntoId,
-    category,
-    page,
     dateAfter,
     dateBefore,
-
-    // Handlers
     setSedeId,
     setPanelId,
     setPuntoId,
-    setCategory,
     setDateRange,
-    setPage,
-
-    // Status
     isLoadingHeadquarters,
     isLoadingMeasurementPoints,
     isReady,

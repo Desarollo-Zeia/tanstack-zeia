@@ -69,8 +69,8 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
     enabled: !!headquarterId && !!dateAfterStr && !!dateBeforeStr,
   })
 
-  const { chartData, unit, channelNames } = useMemo(() => {
-    const results = data ?? []
+  const { chartData, unit } = useMemo(() => {
+    const results = data?.results ?? []
     const unit = results[0]?.unit ?? 'KW'
 
     const allChannelNames = new Set<string>()
@@ -94,6 +94,7 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
         borderColor: color,
         backgroundColor: color + '1A',
         borderWidth: 2,
+        borderDash: [] as number[],
         pointRadius: 1,
         pointHoverRadius: 5,
         tension: 0.3,
@@ -102,13 +103,66 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
       }
     })
 
+    const thresholds = data?.power_thresholds
+    if (thresholds) {
+      const labels = results.map((r) => formatTimeLabel(r.created_at, groupBy))
+      const thresholdCount = labels.length
+
+      if (thresholds.power_max !== null) {
+        datasets.push({
+          label: `Máxima: ${thresholds.power_max} ${unit}`,
+          data: Array(thresholdCount).fill(thresholds.power_max),
+          borderColor: '#E71D36',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0,
+          fill: false,
+          spanGaps: true,
+        })
+      }
+
+      if (thresholds.power_contracted !== null) {
+        datasets.push({
+          label: `Contratada: ${thresholds.power_contracted} ${unit}`,
+          data: Array(thresholdCount).fill(thresholds.power_contracted),
+          borderColor: '#FF6B35',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0,
+          fill: false,
+          spanGaps: true,
+        })
+      }
+
+      if (thresholds.power_installed !== null) {
+        datasets.push({
+          label: `Instalada: ${thresholds.power_installed} ${unit}`,
+          data: Array(thresholdCount).fill(thresholds.power_installed),
+          borderColor: '#FEE440',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0,
+          fill: false,
+          spanGaps: true,
+        })
+      }
+    }
+
     return {
       chartData: {
         labels: results.map((r) => formatTimeLabel(r.created_at, groupBy)),
         datasets,
       } satisfies ChartData<'line'>,
       unit,
-      channelNames,
     }
   }, [data, groupBy])
 
@@ -122,7 +176,7 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
       },
       plugins: {
         legend: {
-          display: channelNames.length > 1,
+          display: true,
           position: 'top',
           labels: {
             color: '#4D5A63',
@@ -138,7 +192,7 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
           callbacks: {
             title: (items) => {
               const item = items[0]
-              const results = data ?? []
+              const results = data?.results ?? []
               const rawIndex = item?.dataIndex ?? 0
               const raw = results[rawIndex]
               if (!raw) return ''
@@ -197,7 +251,7 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
         },
       },
     }),
-    [data, channelNames, unit, groupBy]
+    [data, unit, groupBy]
   )
 
   const groupByOptions = GROUP_BY_OPTIONS.map((gb) => ({
@@ -234,7 +288,7 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
               <p className="text-sm text-text-muted">Cargando gráfico...</p>
             </div>
           </div>
-        ) : !data || data.length === 0 ? (
+        ) : !data || data.results.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-text-muted">
             <div className="text-center space-y-2">
               <Activity className="w-12 h-12 mx-auto text-text-muted/40" />
