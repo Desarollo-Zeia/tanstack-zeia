@@ -1,0 +1,252 @@
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  type ChartData,
+  type ChartOptions,
+} from 'chart.js'
+import { Activity, Clock } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ZeiaSelect } from '@/components/ui/select'
+import { fetchPowerGraph } from '@/features/dashboard/api/power-graph'
+import { formatDateISO } from '@/lib/date-utils'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend)
+
+const GROUP_BY_OPTIONS = ['hour', 'day'] as const
+type GroupBy = (typeof GROUP_BY_OPTIONS)[number]
+
+const GROUP_BY_LABELS: Record<GroupBy, string> = {
+  hour: 'Por Hora',
+  day: 'Por Día',
+}
+
+const LINE_COLORS = [
+  '#00B7CA',
+  '#2EC4B6',
+  '#FF6B35',
+  '#E71D36',
+  '#9B5DE5',
+  '#F15BB5',
+  '#00BBF9',
+  '#FEE440',
+]
+
+interface PowerGraphProps {
+  headquarterId: number
+  dateAfter: Date
+  dateBefore: Date
+}
+
+function formatTimeLabel(isoString: string, groupBy: GroupBy): string {
+  const date = new Date(isoString)
+  if (groupBy === 'day') {
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    return `${day}/${month}`
+  }
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphProps) {
+  const [groupBy, setGroupBy] = useState<GroupBy>('hour')
+
+  const dateAfterStr = formatDateISO(dateAfter) ?? ''
+  const dateBeforeStr = formatDateISO(dateBefore) ?? ''
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['power-graph', headquarterId, dateAfterStr, dateBeforeStr, groupBy],
+    queryFn: () => fetchPowerGraph(headquarterId, dateAfterStr, dateBeforeStr, groupBy),
+    enabled: !!headquarterId && !!dateAfterStr && !!dateBeforeStr,
+  })
+
+  const { chartData, unit, channelNames } = useMemo(() => {
+    const results = data ?? []
+    const unit = results[0]?.unit ?? 'KW'
+
+    const allChannelNames = new Set<string>()
+    for (const point of results) {
+      for (const channel of point.values_per_channel) {
+        allChannelNames.add(channel.measurement_point_name)
+      }
+    }
+    const channelNames = Array.from(allChannelNames)
+
+    const datasets = channelNames.map((name, index) => {
+      const color = LINE_COLORS[index % LINE_COLORS.length]
+      return {
+        label: name,
+        data: results.map((point) => {
+          const channel = point.values_per_channel.find(
+            (c) => c.measurement_point_name === name
+          )
+          return channel?.power ?? null
+        }),
+        borderColor: color,
+        backgroundColor: color + '1A',
+        borderWidth: 2,
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        fill: false,
+        spanGaps: true,
+      }
+    })
+
+    return {
+      chartData: {
+        labels: results.map((r) => formatTimeLabel(r.created_at, groupBy)),
+        datasets,
+      } satisfies ChartData<'line'>,
+      unit,
+      channelNames,
+    }
+  }, [data, groupBy])
+
+  const options: ChartOptions<'line'> = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: channelNames.length > 1,
+          position: 'top',
+          labels: {
+            color: '#4D5A63',
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 16,
+            font: {
+              size: 11,
+            },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              const item = items[0]
+              const results = data ?? []
+              const rawIndex = item?.dataIndex ?? 0
+              const raw = results[rawIndex]
+              if (!raw) return ''
+              const date = new Date(raw.created_at)
+              if (groupBy === 'day') {
+                return date.toLocaleDateString('es-PE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })
+              }
+              return date.toLocaleString('es-PE', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })
+            },
+            label: (context) => {
+              const value = context.raw as number
+              return `${context.dataset.label}: ${value.toLocaleString('es-PE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} ${unit}`
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(136, 147, 155, 0.1)',
+          },
+          ticks: {
+            color: '#88939b',
+            maxRotation: 45,
+            minRotation: 45,
+            maxTicksLimit: 20,
+          },
+        },
+        y: {
+          title: {
+            display: true,
+            text: `Potencia (${unit})`,
+            color: '#88939b',
+            font: {
+              size: 12,
+              weight: 'bold',
+            },
+          },
+          grid: {
+            color: 'rgba(136, 147, 155, 0.1)',
+          },
+          ticks: {
+            color: '#88939b',
+          },
+        },
+      },
+    }),
+    [data, channelNames, unit, groupBy]
+  )
+
+  const groupByOptions = GROUP_BY_OPTIONS.map((gb) => ({
+    value: gb,
+    label: GROUP_BY_LABELS[gb],
+  }))
+
+  return (
+    <Card className="flex flex-col h-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Gráfico de Potencia</CardTitle>
+            <CardDescription>
+              Monitoreo continuo de los niveles de potencia por punto de medición
+            </CardDescription>
+          </div>
+          <div className="min-w-[140px]">
+            <ZeiaSelect
+              options={groupByOptions}
+              value={groupBy}
+              onChange={(val) => setGroupBy(val as GroupBy)}
+              placeholder="Agrupar por"
+              icon={Clock}
+            />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col min-h-0">
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-text-muted">Cargando gráfico...</p>
+            </div>
+          </div>
+        ) : !data || data.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center text-text-muted">
+            <div className="text-center space-y-2">
+              <Activity className="w-12 h-12 mx-auto text-text-muted/40" />
+              <p>No hay datos de potencia para el rango de fechas seleccionado</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 min-h-[400px]">
+            <Line data={chartData} options={options} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

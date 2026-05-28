@@ -1,31 +1,51 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DashboardShell } from '@/features/dashboard/components/shell'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ComparadorFilters } from '@/features/dashboard/components/comparador-filters'
+import { ReadingsGraphEspecific } from '@/features/dashboard/components/readings-graph-especific'
+import { useComparadorFilters } from '@/features/dashboard/hooks/use-comparador-filters'
 
 export const Route = createFileRoute('/energia/dashboard/comparador')({
   component: ComparadorPage,
+  validateSearch: (search) => {
+    return {
+      sede: typeof search.sede === 'string' ? search.sede : undefined,
+      panel: typeof search.panel === 'string' ? search.panel : undefined,
+      punto: typeof search.punto === 'string' ? search.punto : undefined,
+      desde: typeof search.desde === 'string' ? search.desde : undefined,
+      hasta: typeof search.hasta === 'string' ? search.hasta : undefined,
+    }
+  },
 })
 
 function ComparadorPage() {
+  const { sedeId, panelId, puntoId, dateAfter, dateBefore, isReady } = useComparadorFilters()
+
   return (
     <DashboardShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary">Comparación por Día</h1>
-          <p className="text-text-secondary">Comparativa de consumo entre diferentes días</p>
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">Comparación por Día</h1>
+            <p className="text-text-secondary">Comparativa de consumo entre diferentes días</p>
+          </div>
+          <ComparadorFilters />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Comparador Temporal</CardTitle>
-            <CardDescription>
-              Comparación de métricas entre fechas seleccionadas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[400px] flex items-center justify-center text-text-muted">
-            Área de comparación por día (próximamente)
-          </CardContent>
-        </Card>
+        {isReady && sedeId && panelId && puntoId && dateAfter && dateBefore ? (
+          <ReadingsGraphEspecific
+            headquarterId={sedeId}
+            panelId={panelId}
+            measurementPointId={puntoId}
+            dateAfter={dateAfter}
+            dateBefore={dateBefore}
+          />
+        ) : (
+          <div className="rounded-xl border border-border bg-card p-12 flex items-center justify-center text-text-muted min-h-[300px]">
+            <div className="text-center space-y-2">
+              <p>Seleccione sede, panel, punto de monitoreo y rango de fechas para ver la comparación</p>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardShell>
   )

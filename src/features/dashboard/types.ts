@@ -164,3 +164,74 @@ export interface ReadingGraphPoint {
 
 // Readings Graph endpoint returns a plain array, not a wrapped response
 export type ReadingsGraphResponse = ReadingGraphPoint[]
+
+// Power Graph
+export interface PowerChannelValue {
+  measurement_point_name: string
+  power: number
+}
+
+export interface PowerGraphPoint {
+  created_at: string
+  device: string | null
+  values_per_channel: PowerChannelValue[]
+  unit: string
+}
+
+export type PowerGraphResponse = PowerGraphPoint[]
+
+// Unbalanced Current Counters Graph
+export interface UnbalancedCurrentCounter {
+  date: string
+  unbalanced_count: number
+}
+
+export interface UnbalancedCurrentCountersItem {
+  measurement_point: {
+    measurement_point_id: number
+    measurement_point_name: string
+  }
+  device: {
+    device_id: number
+    device_name: string
+    dev_eui: string
+  }
+  date_range: {
+    date_after: string
+    date_before: string
+  }
+  results: UnbalancedCurrentCounter[]
+}
+
+export type UnbalancedCurrentCountersResponse = UnbalancedCurrentCountersItem[]
+
+// Most Three Unbalanced Measurement Points
+export interface TopUnbalancedMeasurementPoint {
+  measurement_point_id: number
+  measurement_point_name: string
+  total_readings: number
+  current_unbalanced: number
+  voltage_unbalanced: number
+  total_unbalanced: number
+}
+
+export interface MostThreeUnbalancedResponse {
+  date: string
+  top_unbalanced_measurement_points: TopUnbalancedMeasurementPoint[]
+}
+
+// Readings Graph Especific (Comparador por Día)
+export interface ReadingsGraphEspecificEntry {
+  time: string
+  indicator: string
+  unit: string
+  value: number
+  difference: number | null
+  device: string
+  measurement_point: string
+  unit_cost: string
+  value_cost: number
+}
+
+export type ReadingsGraphEspecificData = Record<string, ReadingsGraphEspecificEntry[]>
+export type ReadingsGraphEspecificResponse = ReadingsGraphEspecificData[]

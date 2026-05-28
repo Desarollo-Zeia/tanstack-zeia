@@ -172,3 +172,171 @@ interface ConsumptionDistributionResponse {
   }>
 }
 ```
+
+---
+
+## 5. Power Graph by Headquarter
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/powers/graph?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}&group_by={hour|day}
+```
+
+Returns time-series power data for all measurement points in a headquarter.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Query params:**
+- `date_after` (string, required) — format `YYYY-MM-DD`
+- `date_before` (string, required) — format `YYYY-MM-DD`
+- `group_by` (string, optional) — `hour` (default) or `day`
+
+**Response:** `PowerGraphResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+type PowerGraphResponse = Array<{
+  created_at: string
+  device: string | null
+  values_per_channel: Array<{
+    measurement_point_name: string
+    power: number
+  }>
+  unit: string
+}>
+```
+
+---
+
+## 6. Unbalanced Current Counters Graph
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/{panel_id}/measurement_point/{measurement_point_id}/unbalanced-current/counters-graph?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
+```
+
+Returns daily count of unbalanced current events for a specific measurement point.
+
+**Path params:**
+- `headquarter_id` (number, required)
+- `panel_id` (number, required)
+- `measurement_point_id` (number, required)
+
+**Query params:**
+- `date_after` (string, required) — format `YYYY-MM-DD`
+- `date_before` (string, required) — format `YYYY-MM-DD`
+
+**Response:** `UnbalancedCurrentCountersResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+type UnbalancedCurrentCountersResponse = Array<{
+  measurement_point: {
+    measurement_point_id: number
+    measurement_point_name: string
+  }
+  device: {
+    device_id: number
+    device_name: string
+    dev_eui: string
+  }
+  date_range: {
+    date_after: string
+    date_before: string
+  }
+  results: Array<{
+    date: string
+    unbalanced_count: number
+  }>
+}>
+```
+
+---
+
+## 7. Unbalanced Voltage Counters Graph
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/{panel_id}/measurement_point/{measurement_point_id}/unbalanced-voltage/counters-graph?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
+```
+
+Returns daily count of unbalanced voltage events for a specific measurement point.
+
+**Path params:**
+- `headquarter_id` (number, required)
+- `panel_id` (number, required)
+- `measurement_point_id` (number, required)
+
+**Query params:**
+- `date_after` (string, required) — format `YYYY-MM-DD`
+- `date_before` (string, required) — format `YYYY-MM-DD`
+
+**Response:** `UnbalancedCurrentCountersResponse` (same structure as endpoint #6)
+
+---
+
+## 8. Most Three Unbalanced Measurement Points
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/most-three-unbalanced?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
+```
+
+Returns the top 3 measurement points with the most unbalanced events for a headquarter.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Query params:**
+- `date_after` (string, required) — format `YYYY-MM-DD`
+- `date_before` (string, required) — format `YYYY-MM-DD`
+
+**Response:** `MostThreeUnbalancedResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface MostThreeUnbalancedResponse {
+  date: string
+  top_unbalanced_measurement_points: Array<{
+    measurement_point_id: number
+    measurement_point_name: string
+    total_readings: number
+    current_unbalanced: number
+    voltage_unbalanced: number
+    total_unbalanced: number
+  }>
+}
+```
+
+---
+
+## 9. Readings Graph Especific (Comparador por Día)
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/{panel_id}/measurement_points/{measurement_point_id}/readings/graph-especific?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}&indicador=EPpos&last_by=hour
+```
+
+Returns time-series readings data grouped by date for comparison across multiple days.
+
+**Path params:**
+- `headquarter_id` (number, required)
+- `panel_id` (number, required)
+- `measurement_point_id` (number, required)
+
+**Query params:**
+- `date_after` (string, required) — format `YYYY-MM-DD`
+- `date_before` (string, required) — format `YYYY-MM-DD`
+- `indicador` (string, hardcoded) — always `EPpos`
+- `last_by` (string, hardcoded) — always `hour`
+
+**Response:** `ReadingsGraphEspecificResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface ReadingsGraphEspecificEntry {
+  time: string
+  indicator: string
+  unit: string
+  value: number
+  difference: number | null
+  device: string
+  measurement_point: string
+  unit_cost: string
+  value_cost: number
+}
+
+type ReadingsGraphEspecificResponse = Record<string, ReadingsGraphEspecificEntry[]>
+```
