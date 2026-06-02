@@ -269,6 +269,11 @@ export interface AlertsLatestBySubtypeResponse {
   results: AlertItem[]
 }
 
+export interface AlertsHistoryResponse {
+  count: number
+  results: AlertItem[]
+}
+
 // Rate Consumption (Consumo Tarifario)
 export interface RateConsumptionBreakdown {
   total: number

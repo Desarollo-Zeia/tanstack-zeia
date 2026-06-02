@@ -87,7 +87,7 @@ export function AlertsTable({ measurementPointId }: AlertsTableProps) {
         <CardDescription>Historial de alertas por subtipo de energía</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           {/* Toggle de energy_subtype */}
           <div className="flex gap-2">
             {ENERGY_SUBTYPE_OPTIONS.map((option) => (
@@ -106,8 +106,8 @@ export function AlertsTable({ measurementPointId }: AlertsTableProps) {
             ))}
           </div>
 
-          {/* Botón de historial */}
-          <div>
+          {/* Botón de historial arriba, select y descarga abajo, todo a la derecha */}
+          <div className="flex flex-col items-end gap-3">
             <button
               onClick={() => {
                 router.navigate({
@@ -131,34 +131,33 @@ export function AlertsTable({ measurementPointId }: AlertsTableProps) {
             >
               Ver historial de alertas
             </button>
-          </div>
 
-          {/* Select de energy_category y botón de descarga */}
-          <div className="flex items-center justify-right gap-3">
-            <div className="min-w-[200px]">
-              <ZeiaSelect
-                options={[
-                  { value: '', label: 'Todas las categorías' },
-                  ...ENERGY_CATEGORY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))
-                ]}
-                value={energyCategory || ''}
-                onChange={(val) => setEnergyCategory(val as FetchAlertsLatestBySubtypeParams['energyCategory'] || undefined)}
-                placeholder="Categoría de energía"
-              />
+            <div className="flex items-center gap-3">
+              <div className="min-w-[200px]">
+                <ZeiaSelect
+                  options={[
+                    { value: '', label: 'Todas las categorías' },
+                    ...ENERGY_CATEGORY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))
+                  ]}
+                  value={energyCategory || ''}
+                  onChange={(val) => setEnergyCategory(val as FetchAlertsLatestBySubtypeParams['energyCategory'] || undefined)}
+                  placeholder="Categoría de energía"
+                />
+              </div>
+              
+              <button
+                onClick={handleDownloadExcel}
+                disabled={isDownloading}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                  'bg-green-600 text-white hover:bg-green-700',
+                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                )}
+              >
+                <img src="/excel.png" alt="Excel" className="w-4 h-4" />
+                {isDownloading ? 'Descargando...' : 'Descargar Excel'}
+              </button>
             </div>
-            
-            <button
-              onClick={handleDownloadExcel}
-              disabled={isDownloading}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                'bg-green-600 text-white hover:bg-green-700',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            >
-              <img src="/excel.png" alt="Excel" className="w-4 h-4" />
-              {isDownloading ? 'Descargando...' : 'Descargar Excel'}
-            </button>
           </div>
         </div>
 

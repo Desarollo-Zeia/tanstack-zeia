@@ -8,6 +8,7 @@ import { formatDateISO } from '@/lib/date-utils'
 import { useAlertsHistoryFilters } from '../hooks/use-alerts-history-filters'
 import { ZeiaSelect } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import type { AlertItem } from '../types'
 
 const ITEMS_PER_PAGE = 5
 
@@ -152,7 +153,7 @@ export function AlertsHistoryTable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {alerts.map((alert) => (
+                  {alerts.map((alert: AlertItem) => (
                     <tr key={alert.id} className="border-b hover:bg-muted/50">
                       <td className="py-2 px-3">{alert.indicator_name}</td>
                       <td className="py-2 px-3">{alert.subindicator_name}</td>
