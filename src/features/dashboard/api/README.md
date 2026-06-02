@@ -340,3 +340,109 @@ interface ReadingsGraphEspecificEntry {
 
 type ReadingsGraphEspecificResponse = Record<string, ReadingsGraphEspecificEntry[]>
 ```
+
+---
+
+## 10. Rate Consumption (Consumo Tarifario)
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/rate-consumption
+```
+
+Returns energy consumption and cost breakdown by rate type (peak/off-peak) for a headquarter.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Response:** `RateConsumptionResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface RateConsumptionBreakdown {
+  total: number
+  peak: number
+  off_peak: number
+  unit: string
+}
+
+interface RateConsumptionResponse {
+  consumption: RateConsumptionBreakdown
+  cost: RateConsumptionBreakdown
+  first_value: number
+  last_value: number
+  date_first_value: string
+  date_last_value: string
+}
+```
+
+---
+
+## 11. Rate Consumption by Date Range (Comparador de Facturación)
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/rate-consumption/date-range?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
+```
+
+Returns energy consumption and cost breakdown for a specific date range within a headquarter.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Query params:**
+- `date_after` (string, required) — format `YYYY-MM-DD`
+- `date_before` (string, required) — format `YYYY-MM-DD`
+
+**Response:** `RateConsumptionDateRangeResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface RateConsumptionDateRange {
+  start: string
+  end: string
+}
+
+interface RateConsumptionDateRangeResponse {
+  consumption: RateConsumptionBreakdown
+  cost: RateConsumptionBreakdown
+  first_value: number
+  last_value: number
+  date_first_value: string
+  date_last_value: string
+  date_range: RateConsumptionDateRange
+}
+```
+
+---
+
+## 12. Rate Consumption Cycle (Ciclo de Facturación)
+
+```
+GET /headquarter/{headquarter_id}/electrical_panel/rate-consumption/cycle
+```
+
+Returns billing cycle information for a headquarter's electrical panels.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Response:** `RateConsumptionCycleResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface RateConsumptionCycleResponse {
+  power_contracted: number
+  electrical_panel_type: string
+  electrical_panel_threads: number
+  energy_provider: string | null
+  supply_number: string | null
+  billing_cycle_start: string
+  billing_cycle_end: string
+  ratedays: number
+  totalratedays: number
+  total_consumption: number
+  unit_energy: string
+  cost: number
+  unit_cost: string
+  first_value: number | null
+  last_value: number | null
+  date_first_value: string | null
+  date_last_value: string | null
+}
+```

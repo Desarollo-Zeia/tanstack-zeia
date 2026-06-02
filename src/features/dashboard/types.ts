@@ -269,9 +269,86 @@ export interface AlertsLatestBySubtypeResponse {
   results: AlertItem[]
 }
 
-export interface AlertsHistoryResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: AlertItem[]
+// Rate Consumption (Consumo Tarifario)
+export interface RateConsumptionBreakdown {
+  total: number
+  peak: number
+  off_peak: number
+  unit: string
+}
+
+export interface RateConsumptionResponse {
+  consumption: RateConsumptionBreakdown
+  cost: RateConsumptionBreakdown
+  first_value: number
+  last_value: number
+  date_first_value: string
+  date_last_value: string
+}
+
+export interface RateConsumptionDateRange {
+  start: string
+  end: string
+}
+
+export interface RateConsumptionDateRangeResponse {
+  consumption: RateConsumptionBreakdown
+  cost: RateConsumptionBreakdown
+  first_value: number
+  last_value: number
+  date_first_value: string
+  date_last_value: string
+  date_range: RateConsumptionDateRange
+}
+
+export interface RateConsumptionCycleResponse {
+  power_contracted: number
+  electrical_panel_type: string
+  electrical_panel_threads: number
+  energy_provider: string | null
+  supply_number: string | null
+  billing_cycle_start: string
+  billing_cycle_end: string
+  ratedays: number
+  totalratedays: number
+  total_consumption: number
+  unit_energy: string
+  cost: number
+  unit_cost: string
+  first_value: number | null
+  last_value: number | null
+  date_first_value: string | null
+  date_last_value: string | null
+}
+
+export interface ChargeItem {
+  description: string
+  cargo: {
+    value: number
+    unit: string
+  }
+  consumption: {
+    value: number
+    unit: string
+  }
+  billed: {
+    value: number
+    unit: string
+  }
+}
+
+export interface BillingData {
+  tariff_rating: boolean
+  billing_data_type: string
+  billing_cycle_start: string
+  billing_cycle_end: string
+}
+
+export interface RateConsumptionDetailTariffResponse {
+  billing_data: BillingData
+  charges: ChargeItem[]
+  total: number
+  unit_cost: string
+  unit_energy: string
+  unit_power: string
 }
