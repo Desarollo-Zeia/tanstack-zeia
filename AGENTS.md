@@ -505,7 +505,7 @@ Then I will reply with the list of sections registered for that module.
 | Análisis por Indicador | `/energia/dashboard/home` | Filter Bar, Split View (Readings Table + Readings Graph) |
 | Monitoreo de Potencia | `/energia/dashboard/monitoreo` | (pending) |
 | Desbalance de Carga | `/energia/dashboard/desbalance` | (pending) |
-| Consumo Tarifario | `/energia/dashboard/tarifario` | (pending) |
+| Consumo Tarifario | `/energia/dashboard/tarifario` | Filter Bar (solo sede), Total Consumption Card, Billing Comparison (Split View), Billing Cycle Table |
 | Comparación por Día | `/energia/dashboard/comparador` | (pending) |
 | Alertas | `/energia/dashboard/alertas` | Filter Bar, Summary Card (panel name + today_count), Alerts Table (indicador, sub indicador, origen, fecha, hora, límite, valor) |
 
