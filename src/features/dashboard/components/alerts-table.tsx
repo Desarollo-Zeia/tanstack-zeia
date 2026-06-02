@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ZeiaSelect } from '@/components/ui/select'
 import { fetchAlertsLatestBySubtype, downloadAlertsReport } from '@/features/dashboard/api/alerts'
@@ -52,6 +53,7 @@ export function AlertsTable({ measurementPointId }: AlertsTableProps) {
   const [energySubtype, setEnergySubtype] = useState<FetchAlertsLatestBySubtypeParams['energySubtype']>()
   const [energyCategory, setEnergyCategory] = useState<FetchAlertsLatestBySubtypeParams['energyCategory']>()
   const [isDownloading, setIsDownloading] = useState(false)
+  const router = useRouter()
 
   const handleDownloadExcel = async () => {
     setIsDownloading(true)
@@ -85,7 +87,7 @@ export function AlertsTable({ measurementPointId }: AlertsTableProps) {
         <CardDescription>Historial de alertas por subtipo de energía</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col gap-4 mb-6">
           {/* Toggle de energy_subtype */}
           <div className="flex gap-2">
             {ENERGY_SUBTYPE_OPTIONS.map((option) => (
@@ -104,8 +106,35 @@ export function AlertsTable({ measurementPointId }: AlertsTableProps) {
             ))}
           </div>
 
+          {/* Botón de historial */}
+          <div>
+            <button
+              onClick={() => {
+                router.navigate({
+                  to: '/energia/dashboard/alertas-historial',
+                  search: (prev) => ({
+                    sede: prev.sede,
+                    panel: prev.panel,
+                    punto: prev.punto,
+                    desde: prev.desde,
+                    hasta: prev.hasta,
+                    pagina: '1',
+                    subtype: undefined,
+                    category: undefined,
+                  }),
+                })
+              }}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                'bg-primary text-white hover:bg-primary/90'
+              )}
+            >
+              Ver historial de alertas
+            </button>
+          </div>
+
           {/* Select de energy_category y botón de descarga */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-right gap-3">
             <div className="min-w-[200px]">
               <ZeiaSelect
                 options={[

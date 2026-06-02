@@ -268,3 +268,10 @@ export interface AlertsLatestBySubtypeResponse {
   today_count: number
   results: AlertItem[]
 }
+
+export interface AlertsHistoryResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: AlertItem[]
+}
