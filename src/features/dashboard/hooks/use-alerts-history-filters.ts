@@ -5,6 +5,8 @@ import { fetchHeadquarters } from '../api/headquarters'
 import { fetchDeviceMeasurementPointsList } from '../api/measurement-points'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
 
+export type HistoryIndicator = 'energy' | 'voltage-fluctuation' | 'power-demand' | 'current-monitoring' | 'harmonic-distortion'
+
 export function useAlertsHistoryFilters() {
   const navigate = useNavigate({ from: '/energia/dashboard/alertas-historial' })
   const search = useSearch({ from: '/energia/dashboard/alertas-historial' })
@@ -17,6 +19,17 @@ export function useAlertsHistoryFilters() {
   const page = typeof search.pagina === 'string' ? Number(search.pagina) : 1
   const subtype = typeof search.subtype === 'string' ? search.subtype : undefined
   const category = typeof search.category === 'string' ? search.category : undefined
+  const indicator: HistoryIndicator =
+    search.indicator === 'voltage-fluctuation'
+      ? 'voltage-fluctuation'
+      : search.indicator === 'power-demand'
+        ? 'power-demand'
+        : search.indicator === 'current-monitoring'
+          ? 'current-monitoring'
+          : search.indicator === 'harmonic-distortion'
+            ? 'harmonic-distortion'
+            : 'energy'
+  const phase = typeof search.phase === 'string' ? search.phase : undefined
 
   const today = useMemo(() => new Date(), [])
 
@@ -90,6 +103,8 @@ export function useAlertsHistoryFilters() {
           pagina: '1',
           subtype,
           category,
+          indicator,
+          phase,
         },
       })
     }
@@ -103,6 +118,8 @@ export function useAlertsHistoryFilters() {
     navigate,
     subtype,
     category,
+    indicator,
+    phase,
   ])
 
   useEffect(() => {
@@ -129,9 +146,11 @@ export function useAlertsHistoryFilters() {
         pagina: '1',
         subtype,
         category,
+        indicator,
+        phase,
       },
     })
-  }, [measurementPoints, puntoId, panelId, sedeId, dateAfter, dateBefore, today, navigate, subtype, category])
+  }, [measurementPoints, puntoId, panelId, sedeId, dateAfter, dateBefore, today, navigate, subtype, category, indicator, phase])
 
   const setSedeId = (id: number) => {
     navigate({
@@ -144,6 +163,8 @@ export function useAlertsHistoryFilters() {
         pagina: '1',
         subtype,
         category,
+        indicator,
+        phase,
       },
     })
   }
@@ -159,6 +180,8 @@ export function useAlertsHistoryFilters() {
         pagina: '1',
         subtype,
         category,
+        indicator,
+        phase,
       },
     })
   }
@@ -174,6 +197,8 @@ export function useAlertsHistoryFilters() {
         pagina: '1',
         subtype,
         category,
+        indicator,
+        phase,
       },
     })
   }
@@ -189,6 +214,8 @@ export function useAlertsHistoryFilters() {
         pagina: '1',
         subtype,
         category,
+        indicator,
+        phase,
       },
     })
   }
@@ -204,6 +231,8 @@ export function useAlertsHistoryFilters() {
         pagina: String(newPage),
         subtype,
         category,
+        indicator,
+        phase,
       },
     })
   }
@@ -219,6 +248,8 @@ export function useAlertsHistoryFilters() {
         pagina: '1',
         subtype: newSubtype,
         category,
+        indicator,
+        phase,
       },
     })
   }
@@ -234,6 +265,25 @@ export function useAlertsHistoryFilters() {
         pagina: '1',
         subtype,
         category: newCategory,
+        indicator,
+        phase,
+      },
+    })
+  }
+
+  const setPhase = (newPhase: string | undefined) => {
+    navigate({
+      search: {
+        sede: String(sedeId),
+        panel: String(panelId),
+        punto: String(puntoId),
+        desde: formatDateISO(dateAfter),
+        hasta: formatDateISO(dateBefore),
+        pagina: '1',
+        subtype,
+        category,
+        indicator,
+        phase: newPhase,
       },
     })
   }
@@ -254,6 +304,8 @@ export function useAlertsHistoryFilters() {
     page,
     subtype,
     category,
+    indicator,
+    phase,
     setSedeId,
     setPanelId,
     setPuntoId,
@@ -261,6 +313,7 @@ export function useAlertsHistoryFilters() {
     setPage,
     setSubtype,
     setCategory,
+    setPhase,
     isLoadingHeadquarters,
     isLoadingMeasurementPoints,
     isReady,

@@ -3,9 +3,20 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { fetchAlertsHistory, downloadAlertsHistoryReport } from '../api/alerts'
-import { formatDateISO } from '@/lib/date-utils'
+import {
+  fetchAlertsHistory,
+  fetchVoltageFluctuationHistory,
+  fetchPowerDemandHistory,
+  fetchCurrentMonitoringHistory,
+  fetchHarmonicDistortionHistory,
+  downloadAlertsHistoryReport,
+  downloadVoltageFluctuationHistoryReport,
+  downloadPowerDemandHistoryReport,
+  downloadCurrentMonitoringHistoryReport,
+  downloadHarmonicDistortionHistoryReport,
+} from '../api/alerts'
 import { useAlertsHistoryFilters } from '../hooks/use-alerts-history-filters'
+import { formatDateISO } from '@/lib/date-utils'
 import { ZeiaSelect } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import type { AlertItem } from '../types'
@@ -24,6 +35,47 @@ const ENERGY_CATEGORY_OPTIONS = [
   { value: 'reactive', label: 'Reactiva' },
 ]
 
+const FLUCTUATION_SUBTYPE_OPTIONS = [
+  { value: 'overvoltage', label: 'Sobretensión' },
+  { value: 'undervoltage', label: 'Subtensión' },
+  { value: 'zero_voltage', label: 'Voltaje Cero' },
+]
+
+const PHASE_TYPE_OPTIONS = [
+  { value: 'R', label: 'Fase R' },
+  { value: 'S', label: 'Fase S' },
+  { value: 'T', label: 'Fase T' },
+  { value: 'RS', label: 'Fase RS' },
+  { value: 'ST', label: 'Fase ST' },
+  { value: 'RT', label: 'Fase RT' },
+]
+
+const POWER_SUBTYPE_OPTIONS = [
+  { value: 'max_demand_exceeded', label: 'Máxima Demanda Excedida' },
+  { value: 'contracted_power_exceeded', label: 'Potencia Contratada Excedida' },
+  { value: 'installed_power_exceeded', label: 'Potencia Instalada Excedida' },
+  { value: 'max_reactive_exceeded', label: 'Máxima Reactiva Excedida' },
+  { value: 'min_reactive_subceeded', label: 'Mínima Reactiva Subexcedida' },
+]
+
+const CURRENT_SUBTYPE_OPTIONS = [
+  { value: 'max_current_exceeded', label: 'Corriente Máxima Excedida' },
+  { value: 'min_current_subceeded', label: 'Corriente Mínima Subexcedida' },
+  { value: 'zero_current', label: 'Corriente Cero' },
+  { value: 'current_unbalance', label: 'Desbalance de Corriente' },
+]
+
+const HARMONIC_SUBTYPE_OPTIONS = [
+  { value: 'individual_distortion', label: 'Distorsión Individual' },
+  { value: 'total_distortion', label: 'Distorsión Total' },
+]
+
+const SINGLE_PHASE_OPTIONS = [
+  { value: 'A', label: 'Fase A' },
+  { value: 'B', label: 'Fase B' },
+  { value: 'C', label: 'Fase C' },
+]
+
 export function AlertsHistoryTable() {
   const [isDownloading, setIsDownloading] = useState(false)
   const {
@@ -33,24 +85,87 @@ export function AlertsHistoryTable() {
     page,
     subtype,
     category,
+    indicator,
+    phase,
     setPage,
     setSubtype,
     setCategory,
+    setPhase,
   } = useAlertsHistoryFilters()
 
-  const dateAfterStr = formatDateISO(dateAfter)
-  const dateBeforeStr = formatDateISO(dateBefore)
+  const isEnergy = indicator === 'energy'
+  const isVoltage = indicator === 'voltage-fluctuation'
+  const isCurrent = indicator === 'current-monitoring'
+  const isHarmonic = indicator === 'harmonic-distortion'
+  const hasSinglePhase = isCurrent || isHarmonic
+
+  const dateAfterStr = dateAfter ? formatDateISO(dateAfter) : undefined
+  const dateBeforeStr = dateBefore ? formatDateISO(dateBefore) : undefined
 
   const { data, isLoading } = useQuery({
-    queryKey: ['alerts-history', puntoId, dateAfterStr, dateBeforeStr, page, subtype, category],
+    queryKey:
+      indicator === 'energy'
+        ? ['alerts-history', puntoId, dateAfterStr, dateBeforeStr, page, subtype, category]
+        : indicator === 'voltage-fluctuation'
+          ? ['voltage-fluctuation-history', puntoId, dateAfterStr, dateBeforeStr, page, subtype, phase]
+          : indicator === 'current-monitoring'
+            ? ['current-monitoring-history', puntoId, dateAfterStr, dateBeforeStr, page, subtype, phase]
+            : indicator === 'power-demand'
+              ? ['power-demand-history', puntoId, dateAfterStr, dateBeforeStr, page, subtype]
+              : ['harmonic-distortion-history', puntoId, dateAfterStr, dateBeforeStr, page, subtype, phase],
     queryFn: () => {
       if (!puntoId) throw new Error('Missing measurement point')
-      return fetchAlertsHistory({
+      if (isEnergy) {
+        return fetchAlertsHistory({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          energySubtype: subtype ? [subtype] : undefined,
+          energyCategory: category as 'active' | 'reactive' | undefined,
+          page,
+        })
+      }
+      if (isVoltage) {
+        return fetchVoltageFluctuationHistory({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          fluctuationSubtype: subtype ? [subtype as 'overvoltage' | 'undervoltage' | 'zero_voltage'] : undefined,
+          phaseType: phase ? [phase as 'R' | 'S' | 'T' | 'RS' | 'ST' | 'RT'] : undefined,
+          page,
+        })
+      }
+      if (isCurrent) {
+        return fetchCurrentMonitoringHistory({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          currentSubtype: subtype
+            ? [subtype as 'max_current_exceeded' | 'min_current_subceeded' | 'zero_current' | 'current_unbalance']
+            : undefined,
+          currentPhase: phase ? [phase as 'A' | 'B' | 'C'] : undefined,
+          page,
+        })
+      }
+      if (isHarmonic) {
+        return fetchHarmonicDistortionHistory({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          harmonicSubtype: subtype
+            ? [subtype as 'individual_distortion' | 'total_distortion']
+            : undefined,
+          phaseType: phase ? [phase as 'A' | 'B' | 'C'] : undefined,
+          page,
+        })
+      }
+      return fetchPowerDemandHistory({
         measurementPointId: puntoId,
         dateAfter: dateAfterStr,
         dateBefore: dateBeforeStr,
-        energySubtype: subtype ? [subtype] : undefined,
-        energyCategory: category as 'active' | 'reactive' | undefined,
+        powerSubtype: subtype
+          ? [subtype as 'max_demand_exceeded' | 'contracted_power_exceeded' | 'installed_power_exceeded' | 'max_reactive_exceeded' | 'min_reactive_subceeded']
+          : undefined,
         page,
       })
     },
@@ -66,18 +181,86 @@ export function AlertsHistoryTable() {
 
     setIsDownloading(true)
     try {
-      await downloadAlertsHistoryReport({
-        measurementPointId: puntoId,
-        dateAfter: dateAfterStr,
-        dateBefore: dateBeforeStr,
-        energySubtype: subtype,
-      })
+      if (isEnergy) {
+        await downloadAlertsHistoryReport({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          energySubtype: subtype,
+        })
+      } else if (isVoltage) {
+        await downloadVoltageFluctuationHistoryReport({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          fluctuationSubtype: subtype as 'overvoltage' | 'undervoltage' | 'zero_voltage' | undefined,
+        })
+      } else if (isCurrent) {
+        await downloadCurrentMonitoringHistoryReport({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          currentSubtype: subtype as 'max_current_exceeded' | 'min_current_subceeded' | 'zero_current' | 'current_unbalance' | undefined,
+        })
+      } else if (isHarmonic) {
+        await downloadHarmonicDistortionHistoryReport({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          harmonicSubtype: subtype as 'individual_distortion' | 'total_distortion' | undefined,
+        })
+      } else {
+        await downloadPowerDemandHistoryReport({
+          measurementPointId: puntoId,
+          dateAfter: dateAfterStr,
+          dateBefore: dateBeforeStr,
+          powerSubtype: subtype as 'max_demand_exceeded' | 'contracted_power_exceeded' | 'installed_power_exceeded' | 'max_reactive_exceeded' | 'min_reactive_subceeded' | undefined,
+        })
+      }
     } catch (error) {
       console.error('Error downloading report:', error)
     } finally {
       setIsDownloading(false)
     }
   }
+
+  const subtypeOptions = isEnergy
+    ? ENERGY_SUBTYPE_OPTIONS
+    : isVoltage
+      ? FLUCTUATION_SUBTYPE_OPTIONS
+      : isCurrent
+        ? CURRENT_SUBTYPE_OPTIONS
+        : isHarmonic
+          ? HARMONIC_SUBTYPE_OPTIONS
+          : POWER_SUBTYPE_OPTIONS
+
+  const subtypeLabel = isEnergy
+    ? 'Subtipo'
+    : isVoltage
+      ? 'Tipo de fluctuación'
+      : isCurrent
+        ? 'Subtipo de corriente'
+        : isHarmonic
+          ? 'Subtipo de distorsión'
+          : 'Subtipo de potencia'
+  const subtypePlaceholder = isEnergy
+    ? 'Seleccionar subtipo'
+    : isVoltage
+      ? 'Seleccionar tipo'
+      : isCurrent
+        ? 'Seleccionar subtipo de corriente'
+        : isHarmonic
+          ? 'Seleccionar subtipo de distorsión'
+          : 'Seleccionar subtipo de potencia'
+  const allSubtypesLabel = isEnergy
+    ? 'Todos los subtipos'
+    : isVoltage
+      ? 'Todos los tipos'
+      : isCurrent
+        ? 'Todos los subtipos de corriente'
+        : isHarmonic
+          ? 'Todos los subtipos de distorsión'
+          : 'Todos los subtipos de potencia'
 
   return (
     <Card>
@@ -88,32 +271,48 @@ export function AlertsHistoryTable() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex flex-col gap-1.5 min-w-[200px]">
-              <label className="label-executive" style={{ color: '#88939b' }}>Subtipo</label>
+              <label className="label-executive" style={{ color: '#88939b' }}>{subtypeLabel}</label>
               <ZeiaSelect
                 value={subtype ?? ''}
                 onChange={(value) => setSubtype(value || undefined)}
                 options={[
-                  { value: '', label: 'Todos los subtipos' },
-                  ...ENERGY_SUBTYPE_OPTIONS,
+                  { value: '', label: allSubtypesLabel },
+                  ...subtypeOptions,
                 ]}
-                placeholder="Seleccionar subtipo"
+                placeholder={subtypePlaceholder}
               />
             </div>
-            <div className="flex flex-col gap-1.5 min-w-[200px]">
-              <label className="label-executive" style={{ color: '#88939b' }}>Categoría</label>
-              <ZeiaSelect
-                value={category ?? ''}
-                onChange={(value) => setCategory(value || undefined)}
-                options={[
-                  { value: '', label: 'Todas las categorías' },
-                  ...ENERGY_CATEGORY_OPTIONS,
-                ]}
-                placeholder="Seleccionar categoría"
-              />
-            </div>
+            {isEnergy && (
+              <div className="flex flex-col gap-1.5 min-w-[200px]">
+                <label className="label-executive" style={{ color: '#88939b' }}>Categoría</label>
+                <ZeiaSelect
+                  value={category ?? ''}
+                  onChange={(value) => setCategory(value || undefined)}
+                  options={[
+                    { value: '', label: 'Todas las categorías' },
+                    ...ENERGY_CATEGORY_OPTIONS,
+                  ]}
+                  placeholder="Seleccionar categoría"
+                />
+              </div>
+            )}
+            {(isVoltage || hasSinglePhase) && (
+              <div className="flex flex-col gap-1.5 min-w-[200px]">
+                <label className="label-executive" style={{ color: '#88939b' }}>Fase</label>
+                <ZeiaSelect
+                  value={phase ?? ''}
+                  onChange={(value) => setPhase(value || undefined)}
+                  options={[
+                    { value: '', label: 'Todas las fases' },
+                    ...(isVoltage ? PHASE_TYPE_OPTIONS : SINGLE_PHASE_OPTIONS),
+                  ]}
+                  placeholder="Seleccionar fase"
+                />
+              </div>
+            )}
           </div>
           <button
             onClick={handleDownload}
@@ -160,7 +359,9 @@ export function AlertsHistoryTable() {
                       <td className="py-2 px-3">{alert.origin}</td>
                       <td className="py-2 px-3">{alert.date}</td>
                       <td className="py-2 px-3">{alert.time}</td>
-                      <td className="py-2 px-3 text-right">{alert.limit.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right">
+                        {alert.limit !== null ? alert.limit.toFixed(2) : '—'}
+                      </td>
                       <td className="py-2 px-3 text-right font-medium">{alert.value.toFixed(2)}</td>
                     </tr>
                   ))}

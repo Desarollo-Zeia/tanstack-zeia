@@ -253,7 +253,7 @@ export interface AlertItem {
   origin: string
   date: string
   time: string
-  limit: number
+  limit: number | null
   value: number
   device_id: number
   device_name: string

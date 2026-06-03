@@ -20,13 +20,38 @@ export const Route = createFileRoute('/energia/dashboard/alertas-historial')({
       pagina: typeof search.pagina === 'string' ? search.pagina : undefined,
       subtype: typeof search.subtype === 'string' ? search.subtype : undefined,
       category: typeof search.category === 'string' ? search.category : undefined,
+      indicator: typeof search.indicator === 'string' ? search.indicator : undefined,
+      phase: typeof search.phase === 'string' ? search.phase : undefined,
     }
   },
 })
 
 function AlertasHistorialPage() {
-  const { sedeId, panelId, puntoId, dateAfter, dateBefore, isReady } = useAlertsHistoryFilters()
+  const { sedeId, panelId, puntoId, dateAfter, dateBefore, indicator, isReady } = useAlertsHistoryFilters()
   const navigate = useNavigate({ from: '/energia/dashboard/alertas-historial' })
+
+  const isVoltage = indicator === 'voltage-fluctuation'
+  const isPower = indicator === 'power-demand'
+  const isCurrent = indicator === 'current-monitoring'
+  const isHarmonic = indicator === 'harmonic-distortion'
+  const pageTitle = isHarmonic
+    ? 'Historial de Alertas de Distorsión Armónica'
+    : isCurrent
+      ? 'Historial de Alertas de Corriente'
+      : isPower
+        ? 'Historial de Alertas de Potencia'
+        : isVoltage
+          ? 'Historial de Alertas de Voltaje'
+          : 'Historial de Alertas'
+  const pageSubtitle = isHarmonic
+    ? 'Consulta el historial completo de alertas de distorsión armónica con paginación'
+    : isCurrent
+      ? 'Consulta el historial completo de alertas de corriente con paginación'
+      : isPower
+        ? 'Consulta el historial completo de alertas de potencia con paginación'
+        : isVoltage
+          ? 'Consulta el historial completo de alertas de voltaje con paginación'
+          : 'Consulta el historial completo de alertas con paginación'
 
   return (
     <DashboardShell>
@@ -35,7 +60,7 @@ function AlertasHistorialPage() {
           <div className="space-y-3">
             <Button
               variant="ghost"
-              onClick={() => navigate({ 
+              onClick={() => navigate({
                 to: '/energia/dashboard/alertas',
                 search: {
                   sede: sedeId ? String(sedeId) : undefined,
@@ -50,8 +75,8 @@ function AlertasHistorialPage() {
               Volver a alertas
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-text-primary">Historial de Alertas</h1>
-              <p className="text-text-secondary">Consulta el historial completo de alertas con paginación</p>
+              <h1 className="text-2xl font-bold text-text-primary">{pageTitle}</h1>
+              <p className="text-text-secondary">{pageSubtitle}</p>
             </div>
           </div>
           <AlertasHistoryFilters />
