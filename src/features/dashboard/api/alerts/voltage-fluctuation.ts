@@ -9,8 +9,8 @@ export type AlertSeverity = 'moderate' | 'critical'
 
 // JSON endpoints use /api/v1/... (apiFetch prepends the base URL)
 const JSON_BASE_PATH = '/alerts/energy/voltage-fluctuation'
-// ⚠️ Excel endpoints intentionally do NOT use /api/v1/ (backend quirk, confirmed by the user)
-const EXCEL_BASE_URL = 'https://api.energy.zeia.com.pe/alerts/energy/voltage-fluctuation'
+// Excel endpoints use /api/v1/... (apiFetch is not used; we use full URL with auth header in download.ts)
+const EXCEL_BASE_URL = 'https://api.energy.zeia.com.pe/api/v1/alerts/energy/voltage-fluctuation'
 const TODAY = () => new Date().toISOString().split('T')[0]
 
 export interface FetchVoltageFluctuationLatestByPhaseParams {
