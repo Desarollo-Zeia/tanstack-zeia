@@ -39,3 +39,13 @@ export interface LoginCredentials {
   email: string
   password: string
 }
+
+export interface OcupacionalAuthResponse {
+  token: string
+  first_name: string
+  last_name: string
+  email: string
+  created_at: string
+  registered_days: number
+  user_id: number
+}

@@ -511,6 +511,22 @@ Then I will reply with the list of sections registered for that module.
 
 > **Note:** `(pending)` modules have no sections yet. They will be filled as they are built via `@Z-MOD`.
 
+## Ocupacional Module Sections Registry
+
+> Routes are internal-prefixed `/ambiental/*` (frontend) but the backend API uses the `ocupacional` namespace. Feature folder is `src/features/ambiental/`; API functions and types keep the `Ocupacional` prefix to reflect the backend naming.
+
+| Module | Route | Sections |
+|--------|-------|----------|
+| Rooms | `/ambiental/dashboard/rooms` | Filter Bar (Sede), Rooms Grid + Pagination |
+| Monitoreo | `/ambiental/dashboard/monitoreo` | Filter Bar (Indicador), Chart Section (Line Chart + Thresholds) |
+| Análisis | `/ambiental/dashboard/analisis` | (vacío — solo título) |
+| Análisis → Indicadores | `/ambiental/dashboard/analisis/indicadores` | (vacío — solo título) |
+| Análisis → Picos Históricos | `/ambiental/dashboard/analisis/picoshistoricos` | (vacío — solo título) |
+| Análisis → Estadísticas | `/ambiental/dashboard/analisis/estadisticas` | (vacío — solo título) |
+| Alertas | `/ambiental/dashboard/alertas` | (vacío — solo título) |
+
+> **Note:** Ocupacional modules currently render only their title inside `OcupacionalShell` (header + sidebar). Sections (KPIs, charts, filters, etc.) will be added via `@Z-MOD` as they are built. The sidebar is hardcoded from `src/features/ambiental/modules.ts` (Rooms, Monitoreo, Análisis con sub-items, Alertas). Auth state lives in `zeia-ocupacional-auth` localStorage key; API client is `src/lib/ocupacional-api-client.ts`. Login lives at `/ambiental/login` (separate from `/energia/login`).
+
 ---
 
 ## Section Taxonomy (Dashboard UI)
@@ -574,8 +590,8 @@ pnpm lint     # Run ESLint
 
 ### Philosophy
 - **Test real behavior**: Tests must exercise the actual code paths the user will hit
-- **Real API calls**: Whenever possible, hit the real endpoints (see `request-token.test.ts`). This catches API drift, CORS issues, and real HTTP error paths
-- **No API mocking (MSW)**: This project intentionally does NOT use Mock Service Worker. Tests must either use real endpoints or mock `fetch`/`vi.fn()` at the unit level only
+- **NO real API calls**: Tests must NEVER hit real endpoints. Always ask the user for the JSON response and mock at the `apiFetch`/`apiOcupacionalFetch` level with `vi.fn()`
+- **No API mocking (MSW)**: This project intentionally does NOT use Mock Service Worker. Mock `fetch`/`vi.fn()` at the unit level only
 - **localStorage is mocked globally**: All tests get a fresh `localStorage` mock automatically via `src/test/setup.ts`
 
 ### Test Configuration
@@ -592,7 +608,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    testTimeout: 15000, // 15s for real API calls
+    testTimeout: 5000,  // 5s default — no real API calls
   },
   resolve: {
     alias: {
