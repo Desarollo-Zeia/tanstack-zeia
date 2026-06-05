@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Chart as ChartJS,
@@ -70,57 +70,73 @@ function buildChartData(
   }
 }
 
-const chartOptions: ChartOptions<'line'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: {
-    mode: 'index',
-    intersect: false,
-  },
-  plugins: {
-    legend: {
-      display: false,
+function getUnitLabel(unit: string): string {
+  if (unit === 'PERCENT') return '%'
+  if (unit === 'CELSIUS') return '°C'
+  return unit
+}
+
+function getChartOptions(unit: string): ChartOptions<'line'> {
+  const unitLabel = getUnitLabel(unit)
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
     },
-    tooltip: {
-      backgroundColor: '#FFFFFF',
-      titleColor: '#1C1C1E',
-      bodyColor: '#4D5A63',
-      borderColor: '#E8E8E3',
-      borderWidth: 1,
-      padding: 12,
-      titleFont: { family: 'Poppins', size: 13, weight: 600 },
-      bodyFont: { family: 'Poppins', size: 12 },
-      displayColors: true,
-      boxPadding: 4,
-    },
-  },
-  scales: {
-    x: {
-      grid: {
+    plugins: {
+      legend: {
         display: false,
       },
-      ticks: {
-        maxTicksLimit: 12,
-        font: {
-          family: 'Poppins',
-          size: 11,
+      tooltip: {
+        backgroundColor: '#FFFFFF',
+        titleColor: '#1C1C1E',
+        bodyColor: '#4D5A63',
+        borderColor: '#E8E8E3',
+        borderWidth: 1,
+        padding: 12,
+        titleFont: { family: 'Poppins', size: 13, weight: 600 },
+        bodyFont: { family: 'Poppins', size: 12 },
+        displayColors: true,
+        boxPadding: 4,
+        callbacks: {
+          label: (context) => {
+            const value = context.parsed.y
+            return `${context.dataset.label}: ${value} ${unitLabel}`
+          },
         },
-        color: '#8E8E93',
       },
     },
-    y: {
-      grid: {
-        color: '#E8E8E3',
-      },
-      ticks: {
-        font: {
-          family: 'JetBrains Mono',
-          size: 11,
+    scales: {
+      x: {
+        grid: {
+          display: false,
         },
-        color: '#8E8E93',
+        ticks: {
+          maxTicksLimit: 12,
+          font: {
+            family: 'Poppins',
+            size: 11,
+          },
+          color: '#8E8E93',
+        },
+      },
+      y: {
+        grid: {
+          color: '#E8E8E3',
+        },
+        ticks: {
+          font: {
+            family: 'JetBrains Mono',
+            size: 11,
+          },
+          color: '#8E8E93',
+        },
       },
     },
-  },
+  }
 }
 
 export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, interval }: EstadisticasChartProps) {
@@ -141,10 +157,11 @@ export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, inte
   })
 
   const [visibleRooms, setVisibleRooms] = useState<Set<number>>(new Set())
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
-    if (data && data.length > 0) {
-      // Only first room visible by default
+    if (data && data.length > 0 && !hasInitialized.current) {
+      hasInitialized.current = true
       setVisibleRooms(new Set([data[0].room_id]))
     }
   }, [data])
@@ -170,7 +187,7 @@ export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, inte
     })
   }
 
-  const unitLabel = unit === 'PERCENT' ? '%' : unit === 'CELSIUS' ? '°C' : unit
+  const unitLabel = getUnitLabel(unit)
 
   return (
     <Card>
@@ -236,7 +253,7 @@ export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, inte
           </div>
         ) : data && data.length > 0 ? (
           <div className="h-[400px]">
-            <Line data={chartData} options={chartOptions} />
+            <Line data={chartData} options={getChartOptions(unit)} />
           </div>
         ) : (
           <div className="h-[400px] flex items-center justify-center text-text-muted">
