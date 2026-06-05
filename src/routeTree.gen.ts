@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EnergiaLoginRouteImport } from './routes/energia/login'
+import { Route as AmbientalLoginRouteImport } from './routes/ambiental/login'
 import { Route as EnergiaDashboardTarifarioRouteImport } from './routes/energia/dashboard/tarifario'
 import { Route as EnergiaDashboardPanelRouteImport } from './routes/energia/dashboard/panel'
 import { Route as EnergiaDashboardMonitoreoRouteImport } from './routes/energia/dashboard/monitoreo'
@@ -20,6 +21,13 @@ import { Route as EnergiaDashboardDesbalanceRouteImport } from './routes/energia
 import { Route as EnergiaDashboardComparadorRouteImport } from './routes/energia/dashboard/comparador'
 import { Route as EnergiaDashboardAlertasHistorialRouteImport } from './routes/energia/dashboard/alertas-historial'
 import { Route as EnergiaDashboardAlertasRouteImport } from './routes/energia/dashboard/alertas'
+import { Route as AmbientalDashboardRoomsRouteImport } from './routes/ambiental/dashboard/rooms'
+import { Route as AmbientalDashboardMonitoreoRouteImport } from './routes/ambiental/dashboard/monitoreo'
+import { Route as AmbientalDashboardAnalisisRouteImport } from './routes/ambiental/dashboard/analisis'
+import { Route as AmbientalDashboardAlertasRouteImport } from './routes/ambiental/dashboard/alertas'
+import { Route as AmbientalDashboardAnalisisPicoshistoricosRouteImport } from './routes/ambiental/dashboard/analisis/picoshistoricos'
+import { Route as AmbientalDashboardAnalisisIndicadoresRouteImport } from './routes/ambiental/dashboard/analisis/indicadores'
+import { Route as AmbientalDashboardAnalisisEstadisticasRouteImport } from './routes/ambiental/dashboard/analisis/estadisticas'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -34,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
 const EnergiaLoginRoute = EnergiaLoginRouteImport.update({
   id: '/energia/login',
   path: '/energia/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AmbientalLoginRoute = AmbientalLoginRouteImport.update({
+  id: '/ambiental/login',
+  path: '/ambiental/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EnergiaDashboardTarifarioRoute =
@@ -81,11 +94,57 @@ const EnergiaDashboardAlertasRoute = EnergiaDashboardAlertasRouteImport.update({
   path: '/energia/dashboard/alertas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AmbientalDashboardRoomsRoute = AmbientalDashboardRoomsRouteImport.update({
+  id: '/ambiental/dashboard/rooms',
+  path: '/ambiental/dashboard/rooms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AmbientalDashboardMonitoreoRoute =
+  AmbientalDashboardMonitoreoRouteImport.update({
+    id: '/ambiental/dashboard/monitoreo',
+    path: '/ambiental/dashboard/monitoreo',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AmbientalDashboardAnalisisRoute =
+  AmbientalDashboardAnalisisRouteImport.update({
+    id: '/ambiental/dashboard/analisis',
+    path: '/ambiental/dashboard/analisis',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AmbientalDashboardAlertasRoute =
+  AmbientalDashboardAlertasRouteImport.update({
+    id: '/ambiental/dashboard/alertas',
+    path: '/ambiental/dashboard/alertas',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AmbientalDashboardAnalisisPicoshistoricosRoute =
+  AmbientalDashboardAnalisisPicoshistoricosRouteImport.update({
+    id: '/picoshistoricos',
+    path: '/picoshistoricos',
+    getParentRoute: () => AmbientalDashboardAnalisisRoute,
+  } as any)
+const AmbientalDashboardAnalisisIndicadoresRoute =
+  AmbientalDashboardAnalisisIndicadoresRouteImport.update({
+    id: '/indicadores',
+    path: '/indicadores',
+    getParentRoute: () => AmbientalDashboardAnalisisRoute,
+  } as any)
+const AmbientalDashboardAnalisisEstadisticasRoute =
+  AmbientalDashboardAnalisisEstadisticasRouteImport.update({
+    id: '/estadisticas',
+    path: '/estadisticas',
+    getParentRoute: () => AmbientalDashboardAnalisisRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
+  '/ambiental/login': typeof AmbientalLoginRoute
   '/energia/login': typeof EnergiaLoginRoute
+  '/ambiental/dashboard/alertas': typeof AmbientalDashboardAlertasRoute
+  '/ambiental/dashboard/analisis': typeof AmbientalDashboardAnalisisRouteWithChildren
+  '/ambiental/dashboard/monitoreo': typeof AmbientalDashboardMonitoreoRoute
+  '/ambiental/dashboard/rooms': typeof AmbientalDashboardRoomsRoute
   '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/alertas-historial': typeof EnergiaDashboardAlertasHistorialRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
@@ -94,11 +153,19 @@ export interface FileRoutesByFullPath {
   '/energia/dashboard/monitoreo': typeof EnergiaDashboardMonitoreoRoute
   '/energia/dashboard/panel': typeof EnergiaDashboardPanelRoute
   '/energia/dashboard/tarifario': typeof EnergiaDashboardTarifarioRoute
+  '/ambiental/dashboard/analisis/estadisticas': typeof AmbientalDashboardAnalisisEstadisticasRoute
+  '/ambiental/dashboard/analisis/indicadores': typeof AmbientalDashboardAnalisisIndicadoresRoute
+  '/ambiental/dashboard/analisis/picoshistoricos': typeof AmbientalDashboardAnalisisPicoshistoricosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
+  '/ambiental/login': typeof AmbientalLoginRoute
   '/energia/login': typeof EnergiaLoginRoute
+  '/ambiental/dashboard/alertas': typeof AmbientalDashboardAlertasRoute
+  '/ambiental/dashboard/analisis': typeof AmbientalDashboardAnalisisRouteWithChildren
+  '/ambiental/dashboard/monitoreo': typeof AmbientalDashboardMonitoreoRoute
+  '/ambiental/dashboard/rooms': typeof AmbientalDashboardRoomsRoute
   '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/alertas-historial': typeof EnergiaDashboardAlertasHistorialRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
@@ -107,12 +174,20 @@ export interface FileRoutesByTo {
   '/energia/dashboard/monitoreo': typeof EnergiaDashboardMonitoreoRoute
   '/energia/dashboard/panel': typeof EnergiaDashboardPanelRoute
   '/energia/dashboard/tarifario': typeof EnergiaDashboardTarifarioRoute
+  '/ambiental/dashboard/analisis/estadisticas': typeof AmbientalDashboardAnalisisEstadisticasRoute
+  '/ambiental/dashboard/analisis/indicadores': typeof AmbientalDashboardAnalisisIndicadoresRoute
+  '/ambiental/dashboard/analisis/picoshistoricos': typeof AmbientalDashboardAnalisisPicoshistoricosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
+  '/ambiental/login': typeof AmbientalLoginRoute
   '/energia/login': typeof EnergiaLoginRoute
+  '/ambiental/dashboard/alertas': typeof AmbientalDashboardAlertasRoute
+  '/ambiental/dashboard/analisis': typeof AmbientalDashboardAnalisisRouteWithChildren
+  '/ambiental/dashboard/monitoreo': typeof AmbientalDashboardMonitoreoRoute
+  '/ambiental/dashboard/rooms': typeof AmbientalDashboardRoomsRoute
   '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/alertas-historial': typeof EnergiaDashboardAlertasHistorialRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
@@ -121,13 +196,21 @@ export interface FileRoutesById {
   '/energia/dashboard/monitoreo': typeof EnergiaDashboardMonitoreoRoute
   '/energia/dashboard/panel': typeof EnergiaDashboardPanelRoute
   '/energia/dashboard/tarifario': typeof EnergiaDashboardTarifarioRoute
+  '/ambiental/dashboard/analisis/estadisticas': typeof AmbientalDashboardAnalisisEstadisticasRoute
+  '/ambiental/dashboard/analisis/indicadores': typeof AmbientalDashboardAnalisisIndicadoresRoute
+  '/ambiental/dashboard/analisis/picoshistoricos': typeof AmbientalDashboardAnalisisPicoshistoricosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/profile'
+    | '/ambiental/login'
     | '/energia/login'
+    | '/ambiental/dashboard/alertas'
+    | '/ambiental/dashboard/analisis'
+    | '/ambiental/dashboard/monitoreo'
+    | '/ambiental/dashboard/rooms'
     | '/energia/dashboard/alertas'
     | '/energia/dashboard/alertas-historial'
     | '/energia/dashboard/comparador'
@@ -136,11 +219,19 @@ export interface FileRouteTypes {
     | '/energia/dashboard/monitoreo'
     | '/energia/dashboard/panel'
     | '/energia/dashboard/tarifario'
+    | '/ambiental/dashboard/analisis/estadisticas'
+    | '/ambiental/dashboard/analisis/indicadores'
+    | '/ambiental/dashboard/analisis/picoshistoricos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/profile'
+    | '/ambiental/login'
     | '/energia/login'
+    | '/ambiental/dashboard/alertas'
+    | '/ambiental/dashboard/analisis'
+    | '/ambiental/dashboard/monitoreo'
+    | '/ambiental/dashboard/rooms'
     | '/energia/dashboard/alertas'
     | '/energia/dashboard/alertas-historial'
     | '/energia/dashboard/comparador'
@@ -149,11 +240,19 @@ export interface FileRouteTypes {
     | '/energia/dashboard/monitoreo'
     | '/energia/dashboard/panel'
     | '/energia/dashboard/tarifario'
+    | '/ambiental/dashboard/analisis/estadisticas'
+    | '/ambiental/dashboard/analisis/indicadores'
+    | '/ambiental/dashboard/analisis/picoshistoricos'
   id:
     | '__root__'
     | '/'
     | '/profile'
+    | '/ambiental/login'
     | '/energia/login'
+    | '/ambiental/dashboard/alertas'
+    | '/ambiental/dashboard/analisis'
+    | '/ambiental/dashboard/monitoreo'
+    | '/ambiental/dashboard/rooms'
     | '/energia/dashboard/alertas'
     | '/energia/dashboard/alertas-historial'
     | '/energia/dashboard/comparador'
@@ -162,12 +261,20 @@ export interface FileRouteTypes {
     | '/energia/dashboard/monitoreo'
     | '/energia/dashboard/panel'
     | '/energia/dashboard/tarifario'
+    | '/ambiental/dashboard/analisis/estadisticas'
+    | '/ambiental/dashboard/analisis/indicadores'
+    | '/ambiental/dashboard/analisis/picoshistoricos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProfileRoute: typeof ProfileRoute
+  AmbientalLoginRoute: typeof AmbientalLoginRoute
   EnergiaLoginRoute: typeof EnergiaLoginRoute
+  AmbientalDashboardAlertasRoute: typeof AmbientalDashboardAlertasRoute
+  AmbientalDashboardAnalisisRoute: typeof AmbientalDashboardAnalisisRouteWithChildren
+  AmbientalDashboardMonitoreoRoute: typeof AmbientalDashboardMonitoreoRoute
+  AmbientalDashboardRoomsRoute: typeof AmbientalDashboardRoomsRoute
   EnergiaDashboardAlertasRoute: typeof EnergiaDashboardAlertasRoute
   EnergiaDashboardAlertasHistorialRoute: typeof EnergiaDashboardAlertasHistorialRoute
   EnergiaDashboardComparadorRoute: typeof EnergiaDashboardComparadorRoute
@@ -199,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/energia/login'
       fullPath: '/energia/login'
       preLoaderRoute: typeof EnergiaLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ambiental/login': {
+      id: '/ambiental/login'
+      path: '/ambiental/login'
+      fullPath: '/ambiental/login'
+      preLoaderRoute: typeof AmbientalLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/energia/dashboard/tarifario': {
@@ -257,13 +371,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EnergiaDashboardAlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ambiental/dashboard/rooms': {
+      id: '/ambiental/dashboard/rooms'
+      path: '/ambiental/dashboard/rooms'
+      fullPath: '/ambiental/dashboard/rooms'
+      preLoaderRoute: typeof AmbientalDashboardRoomsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ambiental/dashboard/monitoreo': {
+      id: '/ambiental/dashboard/monitoreo'
+      path: '/ambiental/dashboard/monitoreo'
+      fullPath: '/ambiental/dashboard/monitoreo'
+      preLoaderRoute: typeof AmbientalDashboardMonitoreoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ambiental/dashboard/analisis': {
+      id: '/ambiental/dashboard/analisis'
+      path: '/ambiental/dashboard/analisis'
+      fullPath: '/ambiental/dashboard/analisis'
+      preLoaderRoute: typeof AmbientalDashboardAnalisisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ambiental/dashboard/alertas': {
+      id: '/ambiental/dashboard/alertas'
+      path: '/ambiental/dashboard/alertas'
+      fullPath: '/ambiental/dashboard/alertas'
+      preLoaderRoute: typeof AmbientalDashboardAlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ambiental/dashboard/analisis/picoshistoricos': {
+      id: '/ambiental/dashboard/analisis/picoshistoricos'
+      path: '/picoshistoricos'
+      fullPath: '/ambiental/dashboard/analisis/picoshistoricos'
+      preLoaderRoute: typeof AmbientalDashboardAnalisisPicoshistoricosRouteImport
+      parentRoute: typeof AmbientalDashboardAnalisisRoute
+    }
+    '/ambiental/dashboard/analisis/indicadores': {
+      id: '/ambiental/dashboard/analisis/indicadores'
+      path: '/indicadores'
+      fullPath: '/ambiental/dashboard/analisis/indicadores'
+      preLoaderRoute: typeof AmbientalDashboardAnalisisIndicadoresRouteImport
+      parentRoute: typeof AmbientalDashboardAnalisisRoute
+    }
+    '/ambiental/dashboard/analisis/estadisticas': {
+      id: '/ambiental/dashboard/analisis/estadisticas'
+      path: '/estadisticas'
+      fullPath: '/ambiental/dashboard/analisis/estadisticas'
+      preLoaderRoute: typeof AmbientalDashboardAnalisisEstadisticasRouteImport
+      parentRoute: typeof AmbientalDashboardAnalisisRoute
+    }
   }
 }
+
+interface AmbientalDashboardAnalisisRouteChildren {
+  AmbientalDashboardAnalisisEstadisticasRoute: typeof AmbientalDashboardAnalisisEstadisticasRoute
+  AmbientalDashboardAnalisisIndicadoresRoute: typeof AmbientalDashboardAnalisisIndicadoresRoute
+  AmbientalDashboardAnalisisPicoshistoricosRoute: typeof AmbientalDashboardAnalisisPicoshistoricosRoute
+}
+
+const AmbientalDashboardAnalisisRouteChildren: AmbientalDashboardAnalisisRouteChildren =
+  {
+    AmbientalDashboardAnalisisEstadisticasRoute:
+      AmbientalDashboardAnalisisEstadisticasRoute,
+    AmbientalDashboardAnalisisIndicadoresRoute:
+      AmbientalDashboardAnalisisIndicadoresRoute,
+    AmbientalDashboardAnalisisPicoshistoricosRoute:
+      AmbientalDashboardAnalisisPicoshistoricosRoute,
+  }
+
+const AmbientalDashboardAnalisisRouteWithChildren =
+  AmbientalDashboardAnalisisRoute._addFileChildren(
+    AmbientalDashboardAnalisisRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProfileRoute: ProfileRoute,
+  AmbientalLoginRoute: AmbientalLoginRoute,
   EnergiaLoginRoute: EnergiaLoginRoute,
+  AmbientalDashboardAlertasRoute: AmbientalDashboardAlertasRoute,
+  AmbientalDashboardAnalisisRoute: AmbientalDashboardAnalisisRouteWithChildren,
+  AmbientalDashboardMonitoreoRoute: AmbientalDashboardMonitoreoRoute,
+  AmbientalDashboardRoomsRoute: AmbientalDashboardRoomsRoute,
   EnergiaDashboardAlertasRoute: EnergiaDashboardAlertasRoute,
   EnergiaDashboardAlertasHistorialRoute: EnergiaDashboardAlertasHistorialRoute,
   EnergiaDashboardComparadorRoute: EnergiaDashboardComparadorRoute,
