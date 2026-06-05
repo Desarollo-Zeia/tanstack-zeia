@@ -6,21 +6,27 @@ import { useEstadisticasFilters } from '@/features/ambiental/hooks/use-estadisti
 export const Route = createFileRoute('/ambiental/dashboard/analisis/estadisticas')({
   component: EstadisticasPage,
   validateSearch: (search) => ({
+    sede: typeof search.sede === 'string' ? search.sede : undefined,
+    sala: typeof search.sala === 'string' ? search.sala : undefined,
     indicador: typeof search.indicador === 'string' ? search.indicador : undefined,
     unidad: typeof search.unidad === 'string' ? search.unidad : undefined,
     desde: typeof search.desde === 'string' ? search.desde : undefined,
     hasta: typeof search.hasta === 'string' ? search.hasta : undefined,
     intervalo: typeof search.intervalo === 'string' ? search.intervalo : undefined,
+    vista: typeof search.vista === 'string' ? search.vista : undefined,
   }),
 })
 
 function EstadisticasPage() {
   const {
+    salaId,
     indicador,
     unidad,
     dateAfter,
     dateBefore,
     intervalo,
+    viewMode,
+    setViewMode,
     isReady,
   } = useEstadisticasFilters()
 
@@ -40,18 +46,21 @@ function EstadisticasPage() {
       </div>
 
       {/* Content */}
-      {isReady && indicador && unidad && dateAfter && dateBefore ? (
+      {isReady && salaId && indicador && unidad && dateAfter && dateBefore ? (
         <EstadisticasChart
+          roomId={salaId}
           indicator={indicador}
           unit={unidad}
           dateAfter={dateAfter}
           dateBefore={dateBefore}
           interval={intervalo}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
       ) : (
         <div className="card-executive p-12 flex items-center justify-center text-center min-h-[300px]">
           <p className="text-sm text-text-muted">
-            Seleccione indicador, rango de fechas e intervalo para ver las estadísticas
+            Seleccione sala, indicador, rango de fechas e intervalo para ver las estadísticas
           </p>
         </div>
       )}

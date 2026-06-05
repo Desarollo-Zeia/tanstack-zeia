@@ -20,8 +20,35 @@ const UNIT_LABELS: Record<string, string> = {
 }
 
 export function EstadisticasFilters() {
-  const { indicador, unidad, dateAfter, dateBefore, intervalo, setIndicator, setDateRange, setIntervalo } =
-    useEstadisticasFilters()
+  const {
+    headquarters,
+    rooms,
+    sedeId,
+    salaId,
+    indicador,
+    unidad,
+    dateAfter,
+    dateBefore,
+    intervalo,
+    viewMode,
+    setSedeId,
+    setSalaId,
+    setIndicator,
+    setDateRange,
+    setIntervalo,
+    isLoadingHeadquarters,
+    isLoadingRooms,
+  } = useEstadisticasFilters()
+
+  const sedeOptions = headquarters.map((h) => ({
+    value: String(h.id),
+    label: h.name,
+  }))
+
+  const salaOptions = rooms.map((r) => ({
+    value: String(r.id),
+    label: r.name,
+  }))
 
   const intervalOptions = INTERVAL_OPTIONS.map((opt) => ({
     value: opt.value === null ? 'null' : String(opt.value),
@@ -32,6 +59,44 @@ export function EstadisticasFilters() {
 
   return (
     <div className="flex flex-wrap items-end gap-3">
+      {/* Sede Selector - Only visible in "by-date" mode */}
+      {viewMode === 'by-date' && (
+        <div className="flex flex-col gap-1.5 min-w-[160px]">
+          <label className="label-executive" style={{ color: '#88939b' }}>
+            Sede
+          </label>
+          {isLoadingHeadquarters ? (
+            <div className="h-9 bg-muted rounded-lg animate-pulse" />
+          ) : (
+            <ZeiaSelect
+              options={sedeOptions}
+              value={sedeId ? String(sedeId) : ''}
+              onChange={(val) => setSedeId(Number(val))}
+              placeholder="Seleccionar sede"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Sala Selector - Only visible in "by-date" mode */}
+      {viewMode === 'by-date' && (
+        <div className="flex flex-col gap-1.5 min-w-[160px]">
+          <label className="label-executive" style={{ color: '#88939b' }}>
+            Sala
+          </label>
+          {isLoadingRooms ? (
+            <div className="h-9 bg-muted rounded-lg animate-pulse" />
+          ) : (
+            <ZeiaSelect
+              options={salaOptions}
+              value={salaId ? String(salaId) : ''}
+              onChange={(val) => setSalaId(Number(val))}
+              placeholder="Seleccionar sala"
+            />
+          )}
+        </div>
+      )}
+
       {/* Indicator Toggle */}
       <div className="flex flex-col gap-1.5">
         <label className="label-executive" style={{ color: '#88939b' }}>

@@ -14,7 +14,8 @@ import { Line } from 'react-chartjs-2'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { fetchIndicatorGraphs } from '../api/indicators'
-import type { RoomIndicatorData } from '../types'
+import { EstadisticasChartByDate } from './estadisticas-chart-by-date'
+import type { RoomIndicatorData, ViewMode } from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
 
@@ -34,11 +35,14 @@ const ROOM_COLORS = [
 ]
 
 interface EstadisticasChartProps {
+  roomId: number
   indicator: string
   unit: string
   dateAfter: Date
   dateBefore: Date
   interval: number | null
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void
 }
 
 function buildChartData(
@@ -70,10 +74,18 @@ function buildChartData(
   }
 }
 
+function getIndicatorLabel(indicator: string): string {
+  if (indicator === 'CO2') return 'CO₂'
+  if (indicator === 'TEMPERATURE') return 'Temperatura'
+  if (indicator === 'HUMIDITY') return 'Humedad'
+  return indicator
+}
+
 function getUnitLabel(unit: string): string {
   if (unit === 'PERCENT') return '%'
   if (unit === 'CELSIUS') return '°C'
-  return unit
+  if (unit === 'PPM') return 'ppm'
+  return unit.toLowerCase()
 }
 
 function getChartOptions(unit: string): ChartOptions<'line'> {
@@ -139,7 +151,7 @@ function getChartOptions(unit: string): ChartOptions<'line'> {
   }
 }
 
-export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, interval }: EstadisticasChartProps) {
+export function EstadisticasChart({ roomId, indicator, unit, dateAfter, dateBefore, interval, viewMode, onViewModeChange }: EstadisticasChartProps) {
   const dateAfterStr = dateAfter.toISOString().split('T')[0]
   const dateBeforeStr = dateBefore.toISOString().split('T')[0]
 
@@ -153,7 +165,7 @@ export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, inte
         dateBefore: dateBeforeStr,
         interval,
       }),
-    enabled: !!indicator && !!unit && !!dateAfterStr && !!dateBeforeStr,
+    enabled: viewMode === 'by-room' && !!indicator && !!unit && !!dateAfterStr && !!dateBeforeStr,
   })
 
   const [visibleRooms, setVisibleRooms] = useState<Set<number>>(new Set())
@@ -175,7 +187,6 @@ export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, inte
     setVisibleRooms((prev) => {
       const next = new Set(prev)
       if (next.has(roomId)) {
-        // Prevent unchecking the last visible room
         if (next.size <= 1) {
           return next
         }
@@ -193,72 +204,117 @@ export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, inte
     <Card>
       <CardHeader>
         <CardTitle>
-          {indicator ?? '—'} {unitLabel ? `(${unitLabel})` : ''}
+          {getIndicatorLabel(indicator)} {unitLabel ? `(${unitLabel})` : ''}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Room Checkboxes */}
-        {data && data.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-text-secondary">
-              Salas a mostrar en la gráfica:
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {data.map((room, index) => {
-                const color = ROOM_COLORS[index % ROOM_COLORS.length]
-                const isVisible = visibleRooms.has(room.room_id)
-                return (
-                  <button
-                    key={room.room_id}
-                    type="button"
-                    onClick={() => toggleRoom(room.room_id)}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all',
-                      'border hover:shadow-soft',
-                      isVisible
-                        ? 'border-primary/30 bg-primary/5 text-text-primary'
-                        : 'border-border bg-card text-text-muted'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'w-4 h-4 rounded border-2 flex items-center justify-center transition-all',
-                        isVisible
-                          ? 'border-primary bg-primary text-white'
-                          : 'border-border bg-transparent'
-                      )}
-                    >
-                      {isVisible && (
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="font-medium">{room.room_name}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
+        {/* View Mode Switch */}
+        <div className="flex items-center gap-1 bg-muted rounded-lg p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => onViewModeChange('by-room')}
+            className={cn(
+              'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              viewMode === 'by-room'
+                ? 'bg-white text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-secondary'
+            )}
+          >
+            Por Sala
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewModeChange('by-date')}
+            className={cn(
+              'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              viewMode === 'by-date'
+                ? 'bg-white text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-secondary'
+            )}
+          >
+            Por Fecha
+          </button>
+        </div>
 
-        {/* Chart */}
-        {isLoading ? (
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        ) : data && data.length > 0 ? (
-          <div className="h-[400px]">
-            <Line data={chartData} options={getChartOptions(unit)} />
-          </div>
+        {viewMode === 'by-date' ? (
+          <EstadisticasChartByDate
+            roomId={roomId}
+            indicator={indicator}
+            unit={unit}
+            dateAfter={dateAfter}
+            dateBefore={dateBefore}
+            interval={interval}
+          />
         ) : (
-          <div className="h-[400px] flex items-center justify-center text-text-muted">
-            No hay datos disponibles para los filtros seleccionados
-          </div>
+          <>
+            {/* Room Checkboxes */}
+            {data && data.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-text-secondary">
+                  Salas a mostrar en la gráfica:
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {data.map((room, index) => {
+                    const color = ROOM_COLORS[index % ROOM_COLORS.length]
+                    const isVisible = visibleRooms.has(room.room_id)
+                    return (
+                      <button
+                        key={room.room_id}
+                        type="button"
+                        onClick={() => toggleRoom(room.room_id)}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all',
+                          'border hover:shadow-soft',
+                          isVisible
+                            ? 'border-primary/30 bg-primary/5 text-text-primary'
+                            : 'border-border bg-card text-text-muted'
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'w-4 h-4 rounded border-2 flex items-center justify-center transition-all',
+                            isVisible
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-border bg-transparent'
+                          )}
+                        >
+                          {isVisible && (
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span className="font-medium">{room.room_name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Chart */}
+            {isLoading ? (
+              <div className="h-[400px] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            ) : data && data.length > 0 ? (
+              <div className="h-[400px]">
+                <Line
+                  key={Array.from(visibleRooms).sort().join(',')}
+                  data={chartData}
+                  options={getChartOptions(unit)}
+                />
+              </div>
+            ) : (
+              <div className="h-[400px] flex items-center justify-center text-text-muted">
+                No hay datos disponibles para los filtros seleccionados
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

@@ -186,3 +186,16 @@ export interface PeakHistoryResponse {
   previous: string | null
   results: PeakHistoryRoom[]
 }
+
+// Room Indicator Graph by Date (single room, multi-date)
+export interface DateReading {
+  hour: string
+  indicator: string
+  unit: string
+  value: number
+  status: string
+}
+
+export type RoomIndicatorGraphResponse = Record<string, DateReading[]>
+
+export type ViewMode = 'by-room' | 'by-date'
