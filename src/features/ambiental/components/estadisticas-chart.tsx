@@ -158,6 +158,10 @@ export function EstadisticasChart({ indicator, unit, dateAfter, dateBefore, inte
     setVisibleRooms((prev) => {
       const next = new Set(prev)
       if (next.has(roomId)) {
+        // Prevent unchecking the last visible room
+        if (next.size <= 1) {
+          return next
+        }
         next.delete(roomId)
       } else {
         next.add(roomId)
