@@ -34,6 +34,14 @@ const STATUS_COLORS: Record<string, string> = {
   CRITICAL: '#991B1B',
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  GOOD: 'Bueno',
+  MODERATE: 'Moderado',
+  UNHEALTHY: 'No Saludable',
+  DANGEROUS: 'Peligroso',
+  CRITICAL: 'Crítico',
+}
+
 function formatDateLong(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00')
   const weekdays = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
@@ -87,7 +95,7 @@ function PeakCard({ room, indicatorLabel, unitLabel }: { room: PeakHistoryRoom; 
                 style={{ backgroundColor: highestColor }}
               />
               <span style={{ color: highestColor }} className="font-medium">
-                {highest.status}
+                {STATUS_LABELS[highest.status] ?? highest.status}
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-text-secondary">
@@ -125,7 +133,7 @@ function PeakCard({ room, indicatorLabel, unitLabel }: { room: PeakHistoryRoom; 
                 style={{ backgroundColor: lowestColor }}
               />
               <span style={{ color: lowestColor }} className="font-medium">
-                {lowest.status}
+                {STATUS_LABELS[lowest.status] ?? lowest.status}
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-text-secondary">
