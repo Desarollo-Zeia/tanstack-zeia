@@ -199,3 +199,21 @@ export interface DateReading {
 export type RoomIndicatorGraphResponse = Record<string, DateReading[]>
 
 export type ViewMode = 'by-room' | 'by-date'
+
+// Alerts
+export interface Alert {
+  indicator: string
+  unit: string
+  value: string
+  level: string
+  resolved: boolean
+  hours: string
+  date: string
+}
+
+export interface AlertsResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: Alert[]
+}

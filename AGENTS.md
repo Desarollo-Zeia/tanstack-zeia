@@ -523,7 +523,7 @@ Then I will reply with the list of sections registered for that module.
 | Análisis → Indicadores | `/ambiental/dashboard/analisis/indicadores` | (vacío — solo título) |
 | Análisis → Picos Históricos | `/ambiental/dashboard/analisis/picoshistoricos` | (vacío — solo título) |
 | Análisis → Estadísticas | `/ambiental/dashboard/analisis/estadisticas` | (vacío — solo título) |
-| Alertas | `/ambiental/dashboard/alertas` | (vacío — solo título) |
+| Alertas | `/ambiental/dashboard/alertas` | Filter Bar (Sala + Indicador + DateRange), Alerts Table (Fecha, Hora, Valor, Unidad, Estado) |
 
 > **Note:** Ocupacional modules currently render only their title inside `OcupacionalShell` (header + sidebar). Sections (KPIs, charts, filters, etc.) will be added via `@Z-MOD` as they are built. The sidebar is hardcoded from `src/features/ambiental/modules.ts` (Rooms, Monitoreo, Análisis con sub-items, Alertas). Auth state lives in `zeia-ocupacional-auth` localStorage key; API client is `src/lib/ocupacional-api-client.ts`. Login lives at `/ambiental/login` (separate from `/energia/login`).
 
@@ -973,6 +973,79 @@ pnpm test --run  # All tests must pass
   }}
 />
 ```
+
+### 11. Data Display Conventions: Dates, Units, and Status Labels
+
+**Rule:** All user-facing data rendered from the backend MUST be formatted for human readability in Spanish. Never show raw backend values (uppercase slugs, ISO dates, raw units) directly in the UI.
+
+#### Date Formatting
+Use the helpers in `src/lib/date-utils.ts`:
+
+| Context | Format | Helper | Example |
+|---------|--------|--------|---------|
+| **Tables, legends, labels, cards** | Long with weekday | `formatDateReadable(dateStr)` | `Viernes 4 de junio` |
+| **Chart X-axis, chart tooltips** | Short without weekday | `formatDateShort(dateStr)` | `4 de junio` |
+
+```tsx
+import { formatDateReadable, formatDateShort } from '@/lib/date-utils'
+
+// In a table cell
+<td>{formatDateReadable(alert.date)}</td>
+
+// In a chart tooltip or axis label
+<span>{formatDateShort(reading.date)}</span>
+```
+
+#### Unit Formatting
+Units from the backend are uppercase slugs (e.g., `PPM`, `CELSIUS`, `PERCENT`). Always map them to their human-readable symbols:
+
+| Backend | Display |
+|---------|---------|
+| `PPM` | `ppm` |
+| `CELSIUS` | `°C` |
+| `PERCENT` / `PERCENTAGE` | `%` |
+| `MG_M3` | `mg/m³` |
+| `UG_M3` | `μg/m³` |
+| `HPA` | `hPa` |
+| `LUX` | `lux` |
+| `DB` | `dB` |
+| `W_M2` | `W/m²` |
+| `KWH` | `kWh` |
+| `M_S` | `m/s` |
+| `KMH` | `km/h` |
+
+Always use a local mapping object (e.g., `UNIT_LABELS`) in the component and a `formatUnit()` helper. Never call `.toLowerCase()` blindly on unit slugs.
+
+```tsx
+const UNIT_LABELS: Record<string, string> = {
+  PPM: 'ppm',
+  CELSIUS: '°C',
+  PERCENT: '%',
+  // ... etc
+}
+
+function formatUnit(unit: string): string {
+  return UNIT_LABELS[unit.toUpperCase()] ?? unit.toLowerCase()
+}
+```
+
+#### Status / Level Label Mapping
+Backend sends uppercase slugs for status/level. Always map them to readable Spanish:
+
+| Backend | Display |
+|---------|---------|
+| `GOOD` | `Bueno` |
+| `UNHEALTHY` | `No saludable` |
+| `DANGEROUS` | `Peligroso` |
+| `MODERATE` | `Moderado` |
+| `HUMIDITY_MAX` | `Humedad máxima` |
+| `TEMP_MAX` | `Temperatura máxima` |
+| `TEMP_MIN` | `Temperatura mínima` |
+| `CO2_MAX` | `CO₂ máximo` |
+| `OFFLINE` | `Desconectado` |
+| `DISABLED` | `Deshabilitado` |
+
+Always use a `LEVEL_STYLES` or `STATUS_LABELS` mapping object in the component. Never display raw slugs.
 
 ---
 
