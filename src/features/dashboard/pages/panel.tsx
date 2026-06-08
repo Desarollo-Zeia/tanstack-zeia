@@ -8,7 +8,7 @@ import { ConsumptionPieChart } from '@/features/dashboard/components/consumption
 import { ConsumptionDistributionList } from '@/features/dashboard/components/consumption-distribution-list'
 import { MeasurementPointsTable } from '@/features/dashboard/components/measurement-points-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDateISO } from '@/lib/date-utils'
+import { formatDateISO, formatDateReadable } from '@/lib/date-utils'
 
 export function PanelPage() {
   const { sedeId, panelId, dateAfter, dateBefore, isReady } = useDashboardFilters()
@@ -31,23 +31,6 @@ export function PanelPage() {
     .filter((r) => !r.is_main)
     .sort((a, b) => b.consumption_kwh - a.consumption_kwh)[0]
 
-  const kpis = [
-    {
-      title: 'Puntos de Medición',
-      value: consumptionData ? String(consumptionData.total_measurement_points) : '—',
-      subtitle: 'Dispositivos activos',
-      icon: Gauge,
-      isLoading: isLoadingConsumption,
-    },
-    {
-      title: topConsumer?.measurement_point_name ?? 'Mayor Consumidor',
-      value: topConsumer ? `${topConsumer.consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })} kWh` : '—',
-      subtitle: topConsumer ? `${topConsumer.consumption_percentage.toFixed(1)}% del total` : '—',
-      icon: BarChart3,
-      isLoading: isLoadingConsumption,
-    },
-  ]
-
   return (
     <DashboardShell>
       <div className="space-y-6">
@@ -60,31 +43,73 @@ export function PanelPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-          {kpis.map((kpi, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium truncate" style={{ color: '#88939b' }}>
-                  {kpi.title}
-                </CardTitle>
-                <kpi.icon className="h-4 w-4 shrink-0" style={{ color: '#88939b' }} />
-              </CardHeader>
-              <CardContent>
-                {kpi.isLoading ? (
-                  <div className="space-y-2">
-                    <div className="h-8 w-3/4 bg-muted rounded animate-pulse" />
-                    <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+          {/* Card 1: Puntos de Medición (estándar) */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium truncate" style={{ color: '#88939b' }}>
+                Puntos de Medición
+              </CardTitle>
+              <Gauge className="h-4 w-4 shrink-0" style={{ color: '#88939b' }} />
+            </CardHeader>
+            <CardContent>
+              {isLoadingConsumption ? (
+                <div className="space-y-2">
+                  <div className="h-8 w-3/4 bg-muted rounded animate-pulse" />
+                  <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-text-primary">
+                    {consumptionData ? String(consumptionData.total_measurement_points) : '—'}
                   </div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-text-primary">
-                      {kpi.value}
-                    </div>
-                    <p className="text-xs text-text-muted">{kpi.subtitle}</p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  <p className="text-xs text-text-muted">Dispositivos activos</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Mayor Consumidor (destacada con misma paleta) */}
+          <Card className="relative overflow-hidden border-l-4 border-l-primary">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium truncate" style={{ color: '#88939b' }}>
+                Mayor Consumidor
+              </CardTitle>
+              <BarChart3 className="h-5 w-5 shrink-0 text-primary" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              {isLoadingConsumption ? (
+                <div className="space-y-2">
+                  <div className="h-8 w-3/4 bg-muted rounded animate-pulse" />
+                  <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                </div>
+              ) : topConsumer ? (
+                <div className="space-y-1">
+                  {/* Nombre del punto como valor principal (más grande y bold) */}
+                  <div className="text-xl font-bold text-text-primary leading-tight">
+                    {topConsumer.measurement_point_name}
+                  </div>
+                  
+                  {/* Valor numérico en primary, grande */}
+                  <div className="flex items-baseline gap-2 pt-1">
+                    <span className="text-3xl font-bold text-primary">
+                      {topConsumer.consumption_kwh.toLocaleString('es-PE', { maximumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-sm font-medium text-primary/80">kWh</span>
+                  </div>
+                  
+                  {/* Porcentaje + badge */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-sm font-bold text-primary">
+                      {topConsumer.consumption_percentage.toFixed(1)}%
+                    </span>
+                    <span className="text-xs text-text-muted">del consumo total del panel</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-2xl font-bold text-text-primary">—</div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
@@ -96,7 +121,7 @@ export function PanelPage() {
             </CardTitle>
             <CardDescription>
               {consumptionData
-                ? `${consumptionData.date_range.start_date} → ${consumptionData.date_range.end_date} | ${consumptionData.total_measurement_points} puntos de medición`
+                ? `${formatDateReadable(consumptionData.date_range.start_date)} → ${formatDateReadable(consumptionData.date_range.end_date)}`
                 : 'Seleccione sede, panel y fechas para ver los datos'}
             </CardDescription>
           </CardHeader>

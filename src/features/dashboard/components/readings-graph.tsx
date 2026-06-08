@@ -1,25 +1,29 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Line } from 'react-chartjs-2'
+import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Tooltip,
   Legend,
   type ChartData,
   type ChartOptions,
+  type TooltipItem,
 } from 'chart.js'
-import { Activity, BarChart3, Clock } from 'lucide-react'
+import { Activity, BarChart3, Clock, LineChart } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ZeiaSelect } from '@/components/ui/select'
 import { fetchReadingsGraph } from '@/features/dashboard/api/readings-graph'
-import { formatDateISO } from '@/lib/date-utils'
+import { formatDateISO, formatDateShort } from '@/lib/date-utils'
+import { getElectricParameter } from '@/lib/electric-parameters'
 import type { Category } from '@/features/dashboard/hooks/use-home-filters'
+import { cn } from '@/lib/utils'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend)
 
 const FALLBACK_INDICATORS = ['P', 'Q']
 
@@ -42,13 +46,49 @@ interface ReadingsGraphProps {
   dateBefore: Date
   category: Category
   availableIndicators: string[]
+  activeIndicator: string
+  onIndicatorChange: (indicator: string) => void
 }
 
-function formatTimeLabel(isoString: string): string {
+function formatTimeLabel(isoString: string, lastBy: LastBy): string {
   const date = new Date(isoString)
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${hours}:${minutes}`
+
+  switch (lastBy) {
+    case 'minute':
+      return `${hours}:${minutes}`
+    case 'hour':
+      return `${hours}:${minutes}`
+    case 'day':
+    case 'week':
+      return formatDateShort(isoString)
+    case 'month':
+      return formatDateShort(isoString)
+    default:
+      return `${hours}:${minutes}`
+  }
+}
+
+function formatTooltipTitle(isoString: string, lastBy: LastBy): string {
+  const date = new Date(isoString)
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+
+  switch (lastBy) {
+    case 'minute':
+      return `${hours}:${minutes}:${seconds}`
+    case 'hour':
+      return `${hours}:${minutes}`
+    case 'day':
+    case 'week':
+      return formatDateShort(isoString)
+    case 'month':
+      return formatDateShort(isoString)
+    default:
+      return `${hours}:${minutes}:${seconds}`
+  }
 }
 
 export function ReadingsGraph({
@@ -59,20 +99,14 @@ export function ReadingsGraph({
   dateBefore,
   category,
   availableIndicators,
+  activeIndicator,
+  onIndicatorChange,
 }: ReadingsGraphProps) {
   const indicatorOptions =
     availableIndicators.length > 0 ? availableIndicators : FALLBACK_INDICATORS
 
-  // Track user's explicit selections
-  const [userSelectedIndicator, setUserSelectedIndicator] = useState<string | null>(null)
   const [lastBy, setLastBy] = useState<LastBy>('minute')
-
-  // Derive the active indicator during render:
-  // if the user-selected indicator is still in the available list, use it;
-  // otherwise default to the first available one
-  const activeIndicator = userSelectedIndicator && indicatorOptions.includes(userSelectedIndicator)
-    ? userSelectedIndicator
-    : (indicatorOptions[0] ?? 'P')
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line')
 
   const dateAfterStr = formatDateISO(dateAfter) ?? ''
   const dateBeforeStr = formatDateISO(dateBefore) ?? ''
@@ -108,34 +142,45 @@ export function ReadingsGraph({
       !!activeIndicator,
   })
 
-  const chartData: ChartData<'line'> = useMemo(() => {
+  const chartData = useMemo(() => {
     const results = data ?? []
     return {
-      labels: results.map((r) => formatTimeLabel(r.first_reading)),
+      labels: results.map((r) => formatTimeLabel(r.first_reading, lastBy)),
       datasets: [
         {
           label: activeIndicator,
           data: results.map((r) => r.first_value),
           borderColor: '#00B7CA',
-          backgroundColor: 'rgba(0, 183, 202, 0.1)',
-          borderWidth: 2,
-          pointRadius: 2,
-          pointHoverRadius: 5,
+          backgroundColor: chartType === 'bar' ? 'rgba(0, 183, 202, 0.6)' : 'rgba(0, 183, 202, 0.1)',
+          borderWidth: chartType === 'bar' ? 0 : 2,
+          pointRadius: chartType === 'bar' ? 0 : 2,
+          pointHoverRadius: chartType === 'bar' ? 0 : 5,
           tension: 0.3,
-          fill: true,
+          fill: chartType === 'line',
+          ...(chartType === 'bar' && {
+            barPercentage: 0.9,
+            categoryPercentage: 0.9,
+            borderRadius: 2,
+            borderSkipped: false,
+            maxBarThickness: 32,
+          }),
         },
       ],
     }
-  }, [data, activeIndicator])
+  }, [data, activeIndicator, lastBy, chartType])
 
   const unit = data?.[0]?.unit ?? ''
+  const activeParam = getElectricParameter(activeIndicator)
+  const yAxisLabel = activeParam
+    ? `${activeParam.parameter} (${activeParam.unit})`
+    : activeIndicator
 
   const options: ChartOptions<'line'> = useMemo(
     () => ({
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
-        mode: 'index',
+        mode: 'index' as const,
         intersect: false,
       },
       plugins: {
@@ -144,19 +189,22 @@ export function ReadingsGraph({
         },
         tooltip: {
           callbacks: {
-            title: (items) => {
+            title: (items: TooltipItem<'line'>[]) => {
               const item = items[0]
               const results = data ?? []
               const rawIndex = item?.dataIndex ?? 0
               const raw = results[rawIndex]
-              return raw ? `${formatTimeLabel(raw.first_reading)} — ${raw.first_reading}` : ''
+              return raw ? formatTooltipTitle(raw.first_reading, lastBy) : ''
             },
-            label: (context) => {
+            label: (context: TooltipItem<'line'>) => {
               const value = context.raw as number
-              return `${activeIndicator}: ${value.toLocaleString('es-PE', {
+              const param = getElectricParameter(activeIndicator)
+              const label = param?.parameter ?? activeIndicator
+              const paramUnit = param?.unit ?? unit
+              return `${label}: ${value.toLocaleString('es-PE', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              })} ${unit}`
+              })} ${paramUnit}`
             },
           },
         },
@@ -175,7 +223,7 @@ export function ReadingsGraph({
         y: {
           title: {
             display: true,
-            text: unit ? `${activeIndicator} (${unit})` : activeIndicator,
+            text: yAxisLabel,
             color: '#88939b',
             font: {
               size: 12,
@@ -191,13 +239,16 @@ export function ReadingsGraph({
         },
       },
     }),
-    [data, activeIndicator, unit]
+    [data, activeIndicator, lastBy, unit, yAxisLabel]
   )
 
-  const selectOptions = indicatorOptions.map((ind) => ({
-    value: ind,
-    label: ind,
-  }))
+  const selectOptions = indicatorOptions.map((ind) => {
+    const param = getElectricParameter(ind)
+    return {
+      value: ind,
+      label: param ? `${param.parameter} (${param.unit})` : ind,
+    }
+  })
 
   const lastByOptions = LAST_BY_OPTIONS.map((lb) => ({
     value: lb,
@@ -215,11 +266,29 @@ export function ReadingsGraph({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setChartType((prev) => (prev === 'line' ? 'bar' : 'line'))}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border',
+                chartType === 'bar'
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-card text-text-secondary border-border hover:border-primary/50'
+              )}
+              title={chartType === 'line' ? 'Cambiar a barras' : 'Cambiar a líneas'}
+            >
+              {chartType === 'line' ? (
+                <BarChart3 className="h-4 w-4" />
+              ) : (
+                <LineChart className="h-4 w-4" />
+              )}
+              {chartType === 'line' ? 'Barras' : 'Línea'}
+            </button>
             <div className="min-w-[120px]">
               <ZeiaSelect
                 options={selectOptions}
                 value={activeIndicator}
-                onChange={(val) => setUserSelectedIndicator(val)}
+                onChange={(val) => onIndicatorChange(val)}
                 placeholder="Indicador"
                 icon={BarChart3}
               />
@@ -253,7 +322,11 @@ export function ReadingsGraph({
           </div>
         ) : (
           <div className="flex-1 min-h-0">
-            <Line data={chartData} options={options} />
+            {chartType === 'line' ? (
+              <Line data={chartData as ChartData<'line'>} options={options} />
+            ) : (
+              <Bar data={chartData as ChartData<'bar'>} options={options as ChartOptions<'bar'>} />
+            )}
           </div>
         )}
       </CardContent>

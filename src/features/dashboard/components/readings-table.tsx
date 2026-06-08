@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Activity, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ReadingsResponse } from '@/features/dashboard/types'
+import { getElectricParameter } from '@/lib/electric-parameters'
 
 interface ReadingsTableProps {
   data: ReadingsResponse | undefined
@@ -10,6 +11,7 @@ interface ReadingsTableProps {
   dateBefore: Date
   page: number
   onPageChange: (page: number) => void
+  indicatorLabel: string
 }
 
 const MONTH_NAMES = [
@@ -50,6 +52,7 @@ export function ReadingsTable({
   dateBefore,
   page,
   onPageChange,
+  indicatorLabel,
 }: ReadingsTableProps) {
   const indicatorKeys = useMemo(() => {
     if (!data || data.results.length === 0) return []
@@ -64,7 +67,7 @@ export function ReadingsTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Lecturas de Indicadores</CardTitle>
+          <CardTitle>{indicatorLabel}</CardTitle>
           <CardDescription>
             Cargando datos del punto de monitoreo seleccionado
           </CardDescription>
@@ -85,15 +88,15 @@ export function ReadingsTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Lecturas de Indicadores</CardTitle>
+          <CardTitle>{indicatorLabel}</CardTitle>
           <CardDescription>
-            No se encontraron lecturas para los filtros seleccionados
+            No se encontraron registros para los filtros seleccionados
           </CardDescription>
         </CardHeader>
         <CardContent className="min-h-[200px] flex items-center justify-center text-text-muted">
           <div className="text-center space-y-2">
             <Activity className="w-12 h-12 mx-auto text-text-muted/40" />
-            <p>Seleccione los filtros para cargar las lecturas</p>
+            <p>Seleccione los filtros para cargar las registros</p>
           </div>
         </CardContent>
       </Card>
@@ -103,9 +106,9 @@ export function ReadingsTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Lecturas de Indicadores</CardTitle>
+        <CardTitle>{indicatorLabel}</CardTitle>
         <CardDescription>
-          {totalCount} lectura{totalCount !== 1 ? 's' : ''} total{totalCount !== 1 ? 'es' : ''} — Página {page} | {formatDateLong(dateAfter)} → {formatDateLong(dateBefore)}
+          {totalCount} registro{totalCount !== 1 ? 's' : ''} total{totalCount !== 1 ? 'es' : ''} — Página {page} | {formatDateLong(dateAfter)} → {formatDateLong(dateBefore)}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -115,14 +118,18 @@ export function ReadingsTable({
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-2 font-medium text-text-secondary whitespace-nowrap">Fecha</th>
                 <th className="text-left py-3 px-2 font-medium text-text-secondary whitespace-nowrap">Hora</th>
-                {indicatorKeys.map((key) => (
-                  <th
-                    key={key}
-                    className="text-left py-3 px-2 font-medium text-text-secondary whitespace-nowrap"
-                  >
-                    {key}
-                  </th>
-                ))}
+                {indicatorKeys.map((key) => {
+                  const param = getElectricParameter(key)
+                  const label = param ? `${param.parameter} (${param.unit})` : key
+                  return (
+                    <th
+                      key={key}
+                      className="text-left py-3 px-2 font-medium text-text-secondary whitespace-nowrap"
+                    >
+                      {label}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
@@ -148,9 +155,9 @@ export function ReadingsTable({
                         >
                           {value !== null && value !== undefined
                             ? Number(value).toLocaleString('es-PE', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
                             : '—'}
                         </td>
                       )

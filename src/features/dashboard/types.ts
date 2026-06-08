@@ -84,6 +84,20 @@ export interface DeviceMeasurementPointsListResponse {
   results: DeviceMeasurementPoint[]
 }
 
+// Favorite Points
+export interface FavoritePoint {
+  id: number
+  name: string
+  measurement_point: number
+  enterprise_id: number
+  energy_headquarter_id: number
+  electrical_panel_id: number
+}
+
+export interface FavoritePointsResponse {
+  results: FavoritePoint[]
+}
+
 // Consumption Distribution
 export interface DateRange {
   type: string
@@ -168,7 +182,8 @@ export type ReadingsGraphResponse = ReadingGraphPoint[]
 // Power Graph
 export interface PowerChannelValue {
   measurement_point_name: string
-  power: number
+  power_avg: number,
+  power_peak: number
 }
 
 export interface PowerGraphPoint {

@@ -88,7 +88,13 @@ export function MeasurementPointsTable({
                   <td className="py-3 px-2 text-text-secondary">{item.key}</td>
                   <td className="py-3 px-2 text-text-secondary capitalize">{item.type}</td>
                   <td className="py-3 px-2 text-text-secondary">{item.capacity}</td>
-                  <td className="py-3 px-2 text-text-secondary">{item.hardware}</td>
+                  <td className="py-3 px-2 text-text-secondary">
+                    {item.hardware === 'No asignado' || !item.hardware ? (
+                      <span className="text-warning font-semibold">No asignado — Sin monitoreo</span>
+                    ) : (
+                      item.hardware
+                    )}
+                  </td>
                   <td className="py-3 px-2 text-text-secondary">{item.electrical_panel}</td>
                   <td className="py-3 px-2">
                     {item.location_reference ? (
