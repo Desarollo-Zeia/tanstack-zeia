@@ -39,7 +39,7 @@ function DesbalancePage() {
         {isReady && sedeId && panelId && puntoId && dateAfter && dateBefore ? (
           <div className="grid gap-6 lg:grid-cols-[350px_1fr]">
             <div>
-              <h2 className="text-lg font-semibold text-text-primary mb-3">Top 3 Desbalances</h2>
+              <h2 className="text-lg font-semibold text-text-primary mb-3">Top 3  - Mayor desbalance del día</h2>
               <TopUnbalancedCards
                 headquarterId={sedeId}
                 dateAfter={dateAfter}

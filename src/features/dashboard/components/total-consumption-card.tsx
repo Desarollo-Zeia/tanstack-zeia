@@ -39,11 +39,11 @@ export function TotalConsumptionCard({ sedeId }: TotalConsumptionCardProps) {
   return (
     <div className="max-w-2xl mx-auto">
       <Card className="overflow-hidden">
-        <div className="relative bg-primary/10 border-b border-border px-6 py-3">
+        <div className="relative bg-primary/10 border-b border-border px-6 py-3 text-center">
           <h3 className="text-sm font-semibold text-primary tracking-wide">
             CONSUMO TOTAL DE ENERGÍA
           </h3>
-          <div className="absolute top-3 right-6 flex items-center gap-1.5 text-xs text-text-muted">
+          <div className="flex items-center justify-center gap-1.5 text-xs text-text-muted mt-1">
             <Calendar className="w-3.5 h-3.5" />
             <span>
               {data.date_first_value} — {data.date_last_value}
@@ -84,29 +84,22 @@ export function TotalConsumptionCard({ sedeId }: TotalConsumptionCardProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
-            <div className="space-y-2">
-              <div className="text-xs text-text-muted uppercase tracking-wide text-center">Punta</div>
-              <div className="flex justify-between">
-                <span className="text-sm text-text-secondary">
-                  {formatNumber(data.consumption.peak, data.consumption.unit)}
-                </span>
-                <span className="text-sm font-medium text-text-primary">
-                  {formatNumber(data.cost.peak, data.cost.unit)}
-                </span>
-              </div>
+          <div className="space-y-3 pt-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-text-secondary">
+                Punta: {formatNumber(data.consumption.peak, data.consumption.unit)}
+              </span>
+              <span className="text-sm font-medium text-danger">
+                {formatNumber(data.cost.peak, data.cost.unit)}
+              </span>
             </div>
-
-            <div className="space-y-2">
-              <div className="text-xs text-text-muted uppercase tracking-wide text-center">Fuera de Punta</div>
-              <div className="flex justify-between">
-                <span className="text-sm text-text-secondary">
-                  {formatNumber(data.consumption.off_peak, data.consumption.unit)}
-                </span>
-                <span className="text-sm font-medium text-text-primary">
-                  {formatNumber(data.cost.off_peak, data.cost.unit)}
-                </span>
-              </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-text-secondary">
+                Fuera de Punta: {formatNumber(data.consumption.off_peak, data.consumption.unit)}
+              </span>
+              <span className="text-sm font-medium text-danger">
+                {formatNumber(data.cost.off_peak, data.cost.unit)}
+              </span>
             </div>
           </div>
         </CardContent>

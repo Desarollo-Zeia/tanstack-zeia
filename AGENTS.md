@@ -519,13 +519,13 @@ Then I will reply with the list of sections registered for that module.
 |--------|-------|----------|
 | Rooms | `/ambiental/dashboard/rooms` | Filter Bar (Sede), Rooms Grid + Pagination |
 | Monitoreo | `/ambiental/dashboard/monitoreo` | Filter Bar (Indicador), Chart Section (Line Chart + Thresholds) |
-| Análisis | `/ambiental/dashboard/analisis` | (vacío — solo título) |
-| Análisis → Indicadores | `/ambiental/dashboard/analisis/indicadores` | (vacío — solo título) |
-| Análisis → Picos Históricos | `/ambiental/dashboard/analisis/picoshistoricos` | (vacío — solo título) |
-| Análisis → Estadísticas | `/ambiental/dashboard/analisis/estadisticas` | (vacío — solo título) |
+| Análisis | `/ambiental/dashboard/analisis` | KPI Row (Sedes, Salas, Salas Activas), Module Grid (Indicadores, Picos Históricos, Estadísticas) |
+| Análisis → Indicadores | `/ambiental/dashboard/analisis/indicadores` | Filter Bar, Thresholds Sidebar, Readings Table |
+| Análisis → Picos Históricos | `/ambiental/dashboard/analisis/picoshistoricos` | Filter Bar, Picos Grid |
+| Análisis → Estadísticas | `/ambiental/dashboard/analisis/estadisticas` | Filter Bar, Estadísticas Chart |
 | Alertas | `/ambiental/dashboard/alertas` | Filter Bar (Sala + Indicador + DateRange), Alerts Table (Fecha, Hora, Valor, Unidad, Estado) |
 
-> **Note:** Ocupacional modules currently render only their title inside `OcupacionalShell` (header + sidebar). Sections (KPIs, charts, filters, etc.) will be added via `@Z-MOD` as they are built. The sidebar is hardcoded from `src/features/ambiental/modules.ts` (Rooms, Monitoreo, Análisis con sub-items, Alertas). Auth state lives in `zeia-ocupacional-auth` localStorage key; API client is `src/lib/ocupacional-api-client.ts`. Login lives at `/ambiental/login` (separate from `/energia/login`).
+> **Note:** Ocupacional modules render inside `OcupacionalShell` (header + sidebar). The sidebar is hardcoded from `src/features/ambiental/modules.ts` (Rooms, Monitoreo, Análisis con sub-items, Alertas). Auth state lives in `zeia-ocupacional-auth` localStorage key; API client is `src/lib/ocupacional-api-client.ts`. Login lives at `/ambiental/login` (separate from `/energia/login`).
 
 ---
 

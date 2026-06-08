@@ -103,6 +103,14 @@ function BillingCard({ title, sedeId, defaultMonthValue }: BillingCardProps) {
         <h3 className="text-sm font-semibold text-primary tracking-wide">
           {title}
         </h3>
+        {data && !isLoading && (
+          <div className="flex items-center gap-1.5 text-xs text-text-muted mt-1">
+            <Calendar className="w-3 h-3" />
+            <span>
+              {formatAPIDate(data.date_first_value)} — {formatAPIDate(data.date_last_value)}
+            </span>
+          </div>
+        )}
         <div className="absolute top-2 right-4 w-40">
           <ZeiaSelect
             options={selectOptions}
@@ -174,12 +182,6 @@ function BillingCard({ title, sedeId, defaultMonthValue }: BillingCardProps) {
                 </span>
                 <span className="font-medium text-danger">
                   {formatNumber(data.cost.off_peak, data.cost.unit)}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-text-muted pt-1">
-                <Calendar className="w-3 h-3" />
-                <span>
-                  {formatAPIDate(data.date_first_value)} — {formatAPIDate(data.date_last_value)}
                 </span>
               </div>
             </div>

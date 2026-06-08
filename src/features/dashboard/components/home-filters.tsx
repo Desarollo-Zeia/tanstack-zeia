@@ -13,7 +13,13 @@ const CATEGORY_LABELS: Record<Category, string> = {
   voltage: 'Voltaje',
 }
 
-export function HomeFilters() {
+interface HomeFiltersProps {
+  onDownloadExcel?: () => void
+  isDownloadingExcel?: boolean
+  canDownload?: boolean
+}
+
+export function HomeFilters({ onDownloadExcel, isDownloadingExcel, canDownload }: HomeFiltersProps) {
   const {
     headquarters,
     panels,
@@ -172,6 +178,25 @@ export function HomeFilters() {
           placeholder="Seleccionar fechas"
         />
       </div>
+
+      {/* Download Excel */}
+      {onDownloadExcel && (
+        <div className="flex flex-col gap-1.5">
+          <label className="label-executive text-text-muted opacity-0 select-none">Descargar</label>
+          <button
+            onClick={onDownloadExcel}
+            disabled={isDownloadingExcel || !canDownload}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors h-[43px]',
+              'bg-green-600 text-white hover:bg-green-700',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            <img src="/excel.png" alt="Excel" className="w-4 h-4" />
+            {isDownloadingExcel ? 'Descargando...' : 'Descargar Excel'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

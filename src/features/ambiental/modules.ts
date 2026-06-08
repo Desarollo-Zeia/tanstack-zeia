@@ -23,7 +23,7 @@ export interface OcupacionalModule extends OcupacionalModuleItem {
 export const OCUPACIONAL_MODULES: OcupacionalModule[] = [
   {
     id: 'rooms',
-    label: 'Rooms',
+    label: 'Listado de Salas',
     url: '/ambiental/dashboard/rooms',
     icon: DoorOpen,
   },

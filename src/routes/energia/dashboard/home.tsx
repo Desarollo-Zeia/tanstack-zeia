@@ -7,6 +7,7 @@ import { ReadingsTable } from '@/features/dashboard/components/readings-table'
 import { ReadingsGraph } from '@/features/dashboard/components/readings-graph'
 import { useHomeFilters } from '@/features/dashboard/hooks/use-home-filters'
 import { fetchReadings } from '@/features/dashboard/api/readings'
+import { downloadReadingsReport } from '@/features/dashboard/api/download-report'
 import { formatDateISO } from '@/lib/date-utils'
 import { getElectricParameter } from '@/lib/electric-parameters'
 
@@ -58,6 +59,7 @@ function HomeDashboardPage() {
       : []
 
   const [activeIndicator, setActiveIndicator] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   const resolvedIndicator =
     activeIndicator && indicatorKeys.includes(activeIndicator)
@@ -65,6 +67,23 @@ function HomeDashboardPage() {
       : (indicatorKeys[0] ?? 'P')
 
   const indicatorLabel = getElectricParameter(resolvedIndicator)?.parameter ?? resolvedIndicator
+
+  const handleDownloadExcel = async () => {
+    if (!sedeId || !panelId || !dateAfterStr || !dateBeforeStr) return
+    setIsDownloading(true)
+    try {
+      await downloadReadingsReport({
+        headquarterId: sedeId,
+        panelId,
+        dateAfter: dateAfterStr,
+        dateBefore: dateBeforeStr,
+      })
+    } catch (error) {
+      console.error('Error downloading report:', error)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   return (
     <DashboardShell>
@@ -74,7 +93,11 @@ function HomeDashboardPage() {
             <h1 className="text-2xl font-bold text-text-primary">Análisis por Indicador</h1>
             <p className="text-text-secondary">Métricas e indicadores de rendimiento energético</p>
           </div>
-          <HomeFilters />
+          <HomeFilters
+            onDownloadExcel={handleDownloadExcel}
+            isDownloadingExcel={isDownloading}
+            canDownload={isReady}
+          />
         </div>
 
         {isReady && sedeId && panelId && puntoId && dateAfter && dateBefore && category ? (

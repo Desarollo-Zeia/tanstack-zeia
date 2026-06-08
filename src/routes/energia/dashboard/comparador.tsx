@@ -23,11 +23,7 @@ function ComparadorPage() {
   return (
     <DashboardShell>
       <div className="space-y-6">
-        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">Comparación de consumo energético entre los días seleccionados</h1>
-            <p className="text-text-secondary">Comparativa de consumo energético entre diferentes días</p>
-          </div>
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-end gap-4">
           <ComparadorFilters />
         </div>
 
