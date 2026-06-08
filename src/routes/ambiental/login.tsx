@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { Leaf, ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { requestOcupacionalToken, OcupacionalAuthError } from '@/features/auth/api/request-ocupacional-token'
 import { useOcupacionalAuth } from '@/features/ambiental/hooks/use-ocupacional-auth'
@@ -16,6 +16,7 @@ export function AmbientalLoginPage() {
   const { setAuth } = useOcupacionalAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
   const mutation = useMutation({
@@ -41,44 +42,27 @@ export function AmbientalLoginPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <div className="hidden lg:flex lg:w-[45%] bg-[#1C1C1E] relative overflow-hidden flex-col justify-between p-12">
-        <div
-          className="absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #5EDFFF 1px, transparent 0)`,
-            backgroundSize: '40px 40px',
-          }}
+      {/* Left Panel - Image */}
+      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
+        <img
+          src="/images/LOGIN-AMBIENTAL.webp"
+          alt="Monitoreo Ambiental"
+          className="absolute inset-0 w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
-              <Leaf className="w-5 h-5 text-primary" />
-            </div>
-            <span className="font-bold text-white text-lg tracking-tight">ZEIA</span>
-          </div>
-
-          <h2 className="text-4xl font-bold text-white mb-4 leading-tight tracking-tight">
-            Monitoreo
-            <br />
-            <span className="text-primary">Ocupacional</span>
+        <div className="relative z-10 flex flex-col justify-end p-12">
+          <h2 className="text-4xl font-bold text-white mb-3 leading-tight tracking-tight">
+            Monitoreo<br />
+            <span className="text-primary">Ambiental</span>
           </h2>
-          <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
+          <p className="text-white/80 text-sm leading-relaxed max-w-sm">
             Sistema de monitoreo de condiciones ambientales y de confort en tiempo real para instalaciones industriales
           </p>
         </div>
-
-        <div className="relative z-10 space-y-3">
-          <MetricPreview label="Calidad del Aire" value="—" trend="—" />
-          <MetricPreview label="Temperatura" value="—" trend="—" />
-          <MetricPreview label="Humedad Relativa" value="—" trend="—" />
-        </div>
-
-        <div className="relative z-10 text-xs text-gray-500">
-          Conexión segura TLS 1.3
-        </div>
       </div>
 
+      {/* Right Panel - Form */}
       <div className="relative flex-1 flex items-center justify-center p-6">
         <button
           type="button"
@@ -96,10 +80,11 @@ export function AmbientalLoginPage() {
           <span>Volver a módulos</span>
         </button>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-lg">
+          {/* Mobile Branding */}
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-4">
-              <Leaf className="w-6 h-6 text-primary" />
+              <img src="/images/co2service.png" alt="Ambiental" className="w-6 h-6 object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-text-primary tracking-tight">ZEIA</h1>
           </div>
@@ -116,7 +101,7 @@ export function AmbientalLoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-danger/10 border-l-4 border-danger p-3 rounded-r-lg">
+                <div className="bg-danger/10 border-l-4 border-danger p-4 rounded-r-lg">
                   <p className="text-sm text-danger font-medium">{error}</p>
                 </div>
               )}
@@ -135,14 +120,23 @@ export function AmbientalLoginPage() {
 
               <div className="space-y-2">
                 <label className="label-executive">Contraseña</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="input-executive w-full font-sans"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="input-executive w-full pr-10 font-sans"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <button
@@ -163,22 +157,10 @@ export function AmbientalLoginPage() {
                 )}
               </button>
             </form>
+
+
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function MetricPreview({ label, value, trend }: { label: string; value: string; trend: string }) {
-  return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-      <p className="text-xs text-gray-500 mb-1 font-medium">{label}</p>
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-lg font-semibold text-white font-tabular">{value}</p>
-        <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/10 text-gray-400">
-          {trend}
-        </span>
       </div>
     </div>
   )

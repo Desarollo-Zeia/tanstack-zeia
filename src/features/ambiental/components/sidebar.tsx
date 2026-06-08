@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useOcupacionalAuth } from '@/features/ambiental/hooks/use-ocupacional-auth'
+import { useQuery } from '@tanstack/react-query'
 import { OCUPACIONAL_MODULES } from '@/features/ambiental/modules'
+import { useOcupacionalAuth } from '@/features/ambiental/hooks/use-ocupacional-auth'
+import { fetchOcupacionalAccountDetail } from '@/features/ambiental/api/account-detail'
 import { cn } from '@/lib/utils'
 
 export function OcupacionalSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const { user } = useOcupacionalAuth()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
+  const { token } = useOcupacionalAuth()
+
+  const { data: accountDetail } = useQuery({
+    queryKey: ['ocupacional-account-detail', token],
+    queryFn: fetchOcupacionalAccountDetail,
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+  })
 
   return (
     <aside
@@ -18,10 +28,18 @@ export function OcupacionalSidebar() {
         collapsed ? 'w-16' : 'w-64'
       )}
     >
-      <div className="h-16 border-b border-border flex items-center justify-end px-4 shrink-0">
+      {/* Header: Company name + chevron */}
+      <div className="h-16 border-b border-border shrink-0 flex items-center px-4 relative">
+        <span className={cn(
+            'absolute left-1/2 -translate-x-1/2 font-semibold text-text-primary text-sm tracking-tight',
+            collapsed && 'hidden'
+          )}>
+          {accountDetail?.name_enterprise || 'ZEIA Ambiental'}
+        </span>
         <button
           className={cn(
             'w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-secondary transition-all',
+            !collapsed && 'ml-auto',
             collapsed && 'mx-auto'
           )}
           onClick={() => setCollapsed(!collapsed)}
@@ -100,17 +118,6 @@ export function OcupacionalSidebar() {
           )
         })}
       </nav>
-
-      <div className="border-t border-border p-3 shrink-0">
-        {!collapsed && user && (
-          <div className="px-2 py-1">
-            <p className="text-sm font-medium text-text-primary truncate">
-              {user.first_name} {user.last_name}
-            </p>
-            <p className="text-xs text-text-muted truncate">{user.email}</p>
-          </div>
-        )}
-      </div>
     </aside>
   )
 }

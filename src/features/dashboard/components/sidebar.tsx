@@ -19,11 +19,18 @@ export function DashboardSidebar() {
         collapsed ? 'w-16' : 'w-64'
       )}
     >
-      {/* Header */}
-      <div className="h-16 border-b border-border flex items-center justify-end px-4 shrink-0">
+      {/* Header: Company name + chevron */}
+      <div className="h-16 border-b border-border shrink-0 flex items-center px-4 relative">
+        <span className={cn(
+            'absolute left-1/2 -translate-x-1/2 font-semibold text-text-primary text-sm tracking-tight',
+            collapsed && 'hidden'
+          )}>
+          {user?.companies?.[0]?.name || 'ZEIA Energy'}
+        </span>
         <button
           className={cn(
             'w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-secondary transition-all',
+            !collapsed && 'ml-auto',
             collapsed && 'mx-auto'
           )}
           onClick={() => setCollapsed(!collapsed)}

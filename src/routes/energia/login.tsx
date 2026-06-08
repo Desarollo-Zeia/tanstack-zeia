@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { Zap, Eye, EyeOff, Loader2, Activity, Lock, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Activity, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { requestToken, AuthError } from '@/features/auth/api/request-token'
 import { useAuth } from '@/features/auth/hooks/use-auth'
@@ -49,52 +49,34 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left Panel - Visual */}
-      <div className="hidden lg:flex lg:w-[45%] bg-[#1C1C1E] relative overflow-hidden flex-col justify-between p-12">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-[0.05]" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, #5EDFFF 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }} />
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary" />
-            </div>
-            <span className="font-bold text-white text-lg tracking-tight">ZEIA</span>
-          </div>
-          
-          <h2 className="text-4xl font-bold text-white mb-4 leading-tight tracking-tight">
+      {/* Left Panel - Image (original) */}
+      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
+        <img
+          src="/images/LOGIN-ENERGY.webp"
+          alt="Monitoreo Energético"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+        <div className="relative z-10 flex flex-col justify-end p-12">
+          <h2 className="text-4xl font-bold text-white mb-3 leading-tight tracking-tight">
             Monitoreo<br />
             <span className="text-primary">Energético</span>
           </h2>
-          <p className="text-gray-400 text-sm leading-relaxed max-w-sm">
+          <p className="text-white/80 text-sm leading-relaxed max-w-sm">
             Sistema de control y gestión de energía en tiempo real para instalaciones industriales
           </p>
         </div>
-
-        {/* Metrics Preview */}
-        <div className="relative z-10 space-y-3">
-          <MetricPreview label="Potencia Activa" value="845.2 kW" trend="+2.4%" positive />
-          <MetricPreview label="Factor de Potencia" value="0.94" trend="OK" ok />
-          <MetricPreview label="Consumo Diario" value="12,450 kWh" trend="-1.2%" positive={false} />
-        </div>
-
-        <div className="relative z-10 flex items-center gap-2 text-xs text-gray-500">
-          <Lock className="w-3 h-3" />
-          <span>Conexión segura TLS 1.3</span>
-        </div>
       </div>
 
-      {/* Right Panel - Form */}
-      <div className="relative flex-1 flex items-center justify-center p-6">
+      {/* Right Panel - Form (improved) */}
+      <div className="relative flex-1 flex items-center justify-center p-8 lg:p-12">
         <button
           type="button"
           onClick={() => router.navigate({ to: '/' })}
           className={cn(
-            "absolute top-6 left-6 z-20 inline-flex items-center gap-2",
-            "px-4 py-2.5 rounded-xl",
+            "absolute top-8 left-8 z-20 inline-flex items-center gap-2",
+            "px-5 py-3 rounded-xl",
             "bg-card border border-border shadow-soft",
             "text-sm font-medium text-text-primary",
             "hover:shadow-medium hover:border-primary/40 hover:-translate-x-0.5",
@@ -102,47 +84,47 @@ export function LoginPage() {
           )}
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Volver a módulos</span>
+          <span>Volver</span>
         </button>
-        <div className="w-full max-w-md">
+
+        <div className="w-full max-w-lg">
           {/* Mobile Branding */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-4">
-              <Zap className="w-6 h-6 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold text-text-primary tracking-tight">ZEIA</h1>
+          <div className="lg:hidden text-center mb-10">
+            <img src="/images/zeia-logo-first.png" alt="Zeia" className="h-10 mx-auto object-contain mb-3" />
+            <h1 className="text-2xl font-bold text-text-primary tracking-tight">Monitoreo Energético</h1>
           </div>
 
-          <div className="card-executive p-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-text-primary mb-1 tracking-tight">
-                Iniciar Sesión
+          <div className="card-executive p-10 lg:p-12">
+            <div className="mb-8">
+              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-primary mb-2">Acceso al sistema</p>
+              <h2 className="text-2xl font-bold text-text-primary mb-2 tracking-tight">
+                Bienvenido de nuevo
               </h2>
-              <p className="text-sm text-text-secondary">
-                Ingrese sus credenciales para acceder al sistema
+              <p className="text-base text-text-secondary leading-relaxed">
+                Ingrese sus credenciales para acceder al panel de monitoreo energético.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="bg-danger/10 border-l-4 border-danger p-3 rounded-r-lg">
+                <div className="bg-danger/10 border-l-4 border-danger p-4 rounded-r-lg">
                   <p className="text-sm text-danger font-medium">{error}</p>
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <label className="label-executive">Correo Electrónico</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="input-executive w-full font-sans"
+                  className="input-executive w-full font-sans py-3.5"
                   placeholder="usuario@zeia.com.pe"
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <label className="label-executive">Contraseña</label>
                 <div className="relative">
                   <input
@@ -150,15 +132,15 @@ export function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="input-executive w-full pr-10 font-sans"
+                    className="input-executive w-full pr-12 font-sans py-3.5"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -167,49 +149,27 @@ export function LoginPage() {
                 type="submit"
                 disabled={mutation.isPending}
                 className={cn(
-                  "btn-executive-primary w-full",
+                  "btn-executive-primary w-full py-4 text-base",
                   mutation.isPending && "opacity-70 cursor-not-allowed"
                 )}
               >
                 {mutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                     <span>Autenticando...</span>
                   </>
                 ) : (
                   <>
                     <span>Iniciar Sesión</span>
-                    <Activity className="w-4 h-4" />
+                    <Activity className="w-5 h-5" />
                   </>
                 )}
               </button>
             </form>
+
+
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function MetricPreview({ label, value, trend, positive, ok }: { 
-  label: string; 
-  value: string; 
-  trend: string;
-  positive?: boolean;
-  ok?: boolean;
-}) {
-  return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-      <p className="text-xs text-gray-500 mb-1 font-medium">{label}</p>
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-lg font-semibold text-white font-tabular">{value}</p>
-        <span className={cn(
-          "text-xs font-medium px-2 py-1 rounded-full",
-          ok ? "bg-success/20 text-success" : 
-          positive ? "bg-success/20 text-success" : "bg-danger/20 text-danger"
-        )}>
-          {trend}
-        </span>
       </div>
     </div>
   )
