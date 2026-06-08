@@ -29,7 +29,7 @@ function UnbalancedCard({ point }: { point: TopUnbalancedMeasurementPoint }) {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-xs text-text-muted mb-1">Current</div>
+            <div className="text-xs text-text-muted mb-1">Corriente</div>
             <div className="text-2xl font-bold text-text-primary font-mono">
               {point.current_unbalanced}
             </div>
@@ -38,7 +38,7 @@ function UnbalancedCard({ point }: { point: TopUnbalancedMeasurementPoint }) {
             </div>
           </div>
           <div>
-            <div className="text-xs text-text-muted mb-1">Voltage</div>
+            <div className="text-xs text-text-muted mb-1">Voltaje</div>
             <div className="text-2xl font-bold text-text-primary font-mono">
               {point.voltage_unbalanced}
             </div>

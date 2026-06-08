@@ -234,7 +234,7 @@ export function ReadingsGraphEspecific({
         y: {
           title: {
             display: true,
-            text: 'Valor',
+            text: 'Consumo energético (KWh)',
             color: '#88939b',
             font: {
               size: 12,
@@ -258,9 +258,9 @@ export function ReadingsGraphEspecific({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Comparación por Día</CardTitle>
+            <CardTitle>Comparación de consumo energético entre los días seleccionados</CardTitle>
             <CardDescription>
-              Comparativa de lecturas entre diferentes fechas
+              Comparativa de consumo energético entre diferentes fechas
             </CardDescription>
           </div>
           {!allDatesVisible && (

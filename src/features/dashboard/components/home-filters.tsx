@@ -1,8 +1,9 @@
-import { Building2, Zap, Activity, Tag } from 'lucide-react'
+import { Building2, Zap, Activity, Tag, Star } from 'lucide-react'
 import { ZeiaSelect } from '@/components/ui/select'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { useHomeFilters, VALID_CATEGORIES } from '../hooks/use-home-filters'
 import type { Category } from '../hooks/use-home-filters'
+import { cn } from '@/lib/utils'
 
 
 const CATEGORY_LABELS: Record<Category, string> = {
@@ -17,19 +18,23 @@ export function HomeFilters() {
     headquarters,
     panels,
     measurementPoints,
+    favoritePoints,
     sedeId,
     panelId,
     puntoId,
     category,
     dateAfter,
     dateBefore,
+    selectedFavoriteId,
     setSedeId,
     setPanelId,
     setPuntoId,
     setCategory,
     setDateRange,
+    setFavoritePoint,
     isLoadingHeadquarters,
     isLoadingMeasurementPoints,
+    isLoadingFavoritePoints,
   } = useHomeFilters()
 
   const sedeOptions = headquarters.map((h) => ({
@@ -52,11 +57,42 @@ export function HomeFilters() {
     label: CATEGORY_LABELS[c],
   }))
 
+  const favoriteOptions = favoritePoints.map((f) => ({
+    value: String(f.id),
+    label: f.name,
+  }))
+
   return (
     <div className="flex flex-wrap items-end gap-3">
-      {/* Sede Selector */}
-      <div className="flex flex-col gap-1.5 min-w-[200px]">
-        <label className="label-executive" style={{ color: '#88939b' }}>Sede</label>
+      {/* Favorite Points Selector — destacado */}
+      {favoritePoints.length > 0 && (
+        <div className="flex flex-col gap-1 min-w-[220px] border-l-4 border-l-primary bg-primary/5 rounded-lg p-2 shadow-glow">
+          <div className="flex items-center gap-1.5">
+            <Star className="h-3 w-3 text-primary fill-primary" />
+            <label className="label-executive text-primary">Favoritos</label>
+          </div>
+          <span className="text-[10px] text-primary/80 font-medium -mt-0.5 ml-[1.1rem]">
+            Acceso rápido a tus puntos
+          </span>
+          {isLoadingFavoritePoints ? (
+            <div className="w-full h-[43px] rounded-lg border border-primary/30 bg-card animate-pulse mt-1" />
+          ) : (
+            <div className="mt-1">
+              <ZeiaSelect
+                options={favoriteOptions}
+                value={selectedFavoriteId ? String(selectedFavoriteId) : ''}
+                onChange={(val) => setFavoritePoint(Number(val))}
+                placeholder="Seleccionar favorito"
+                icon={Star}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Manual selectors — apagados visualmente */}
+      <div className="flex flex-col gap-1.5 min-w-[200px] opacity-70 hover:opacity-100 transition-opacity">
+        <label className="label-executive text-text-muted">Sede</label>
         {isLoadingHeadquarters ? (
           <div className="w-full h-[43px] rounded-lg border border-border bg-card animate-pulse" />
         ) : (
@@ -71,8 +107,11 @@ export function HomeFilters() {
       </div>
 
       {/* Panel Selector */}
-      <div className="flex flex-col gap-1.5 min-w-[240px]">
-        <label className="label-executive" style={{ color: '#88939b' }}>Panel Eléctrico</label>
+      <div className={cn(
+        "flex flex-col gap-1.5 min-w-[240px] transition-opacity",
+        selectedFavoriteId ? "opacity-60" : "opacity-70 hover:opacity-100"
+      )}>
+        <label className="label-executive text-text-muted">Panel Eléctrico</label>
         {panels.length === 0 ? (
           <div className="w-full h-[43px] rounded-lg border border-border bg-card flex items-center px-4 text-sm text-text-muted">
             Seleccione una sede primero
@@ -89,8 +128,11 @@ export function HomeFilters() {
       </div>
 
       {/* Measurement Point Selector */}
-      <div className="flex flex-col gap-1.5 min-w-[240px]">
-        <label className="label-executive" style={{ color: '#88939b' }}>Punto de Monitoreo</label>
+      <div className={cn(
+        "flex flex-col gap-1.5 min-w-[240px] transition-opacity",
+        selectedFavoriteId ? "opacity-60" : "opacity-70 hover:opacity-100"
+      )}>
+        <label className="label-executive text-text-muted">Punto de Monitoreo</label>
         {isLoadingMeasurementPoints || panels.length === 0 ? (
           <div className="w-full h-[43px] rounded-lg border border-border bg-card flex items-center px-4 text-sm text-text-muted">
             {panels.length === 0 ? 'Seleccione un panel primero' : 'Cargando puntos...'}
@@ -108,7 +150,7 @@ export function HomeFilters() {
 
       {/* Category Selector */}
       <div className="flex flex-col gap-1.5 min-w-[180px]">
-        <label className="label-executive" style={{ color: '#88939b' }}>Categoría</label>
+        <label className="label-executive text-text-muted">Indicador</label>
         <ZeiaSelect
           options={categoryOptions}
           value={category ?? ''}
@@ -120,7 +162,7 @@ export function HomeFilters() {
 
       {/* Date Range Picker */}
       <div className="flex flex-col gap-1.5">
-        <label className="label-executive" style={{ color: '#88939b' }}>Rango de Fechas</label>
+        <label className="label-executive text-text-muted">Rango de Fechas</label>
         <DateRangePicker
           value={{
             startDate: dateAfter,

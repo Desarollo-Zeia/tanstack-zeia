@@ -11,6 +11,7 @@ import {
   Legend,
   type ChartData,
   type ChartOptions,
+  type Plugin,
 } from 'chart.js'
 import { Activity, Clock } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,17 +28,6 @@ const GROUP_BY_LABELS: Record<GroupBy, string> = {
   hour: 'Por Hora',
   day: 'Por Día',
 }
-
-const LINE_COLORS = [
-  '#00B7CA',
-  '#2EC4B6',
-  '#FF6B35',
-  '#E71D36',
-  '#9B5DE5',
-  '#F15BB5',
-  '#00BBF9',
-  '#FEE440',
-]
 
 interface PowerGraphProps {
   headquarterId: number
@@ -81,18 +71,30 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
     }
     const channelNames = Array.from(allChannelNames)
 
-    const datasets = channelNames.map((name, index) => {
-      const color = LINE_COLORS[index % LINE_COLORS.length]
-      return {
-        label: name,
-        data: results.map((point) => {
-          const channel = point.values_per_channel.find(
-            (c) => c.measurement_point_name === name
-          )
-          return channel?.power ?? null
-        }),
-        borderColor: color,
-        backgroundColor: color + '1A',
+    const AVG_COLOR = '#00B7CA'
+    const PEAK_COLOR = '#FF6B35'
+
+    const datasets: ChartData<'line'>['datasets'] = []
+
+    for (const name of channelNames) {
+      const avgData = results.map((point) => {
+        const channel = point.values_per_channel.find(
+          (c) => c.measurement_point_name === name
+        )
+        return channel?.power_avg ?? null
+      })
+      const peakData = results.map((point) => {
+        const channel = point.values_per_channel.find(
+          (c) => c.measurement_point_name === name
+        )
+        return channel?.power_peak ?? null
+      })
+
+      datasets.push({
+        label: `${name} · Potencia promedio`,
+        data: avgData,
+        borderColor: AVG_COLOR,
+        backgroundColor: AVG_COLOR + '1A',
         borderWidth: 2,
         borderDash: [] as number[],
         pointRadius: 1,
@@ -100,8 +102,22 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
         tension: 0.3,
         fill: false,
         spanGaps: true,
-      }
-    })
+      })
+
+      datasets.push({
+        label: `${name} · Potencia máxima`,
+        data: peakData,
+        borderColor: PEAK_COLOR,
+        backgroundColor: PEAK_COLOR + '1A',
+        borderWidth: 2,
+        borderDash: [] as number[],
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        fill: false,
+        spanGaps: true,
+      })
+    }
 
     const thresholds = data?.power_thresholds
     if (thresholds) {
@@ -166,6 +182,58 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
     }
   }, [data, groupBy])
 
+  const peakHourPlugin = useMemo<Plugin<'line'>>(() => {
+    return {
+      id: 'peakHourBand',
+      beforeDraw: (chart) => {
+        if (groupBy !== 'hour') return
+        const results = data?.results ?? []
+        if (!results.length) return
+
+        const segments: Array<{ startIdx: number; endIdx: number }> = []
+        let currentStart: number | null = null
+        for (let i = 0; i < results.length; i++) {
+          const date = new Date(results[i].created_at)
+          const hour = date.getHours()
+          if (hour >= 18 && hour <= 23) {
+            if (currentStart === null) currentStart = i
+          } else {
+            if (currentStart !== null) {
+              segments.push({ startIdx: currentStart, endIdx: i - 1 })
+              currentStart = null
+            }
+          }
+        }
+        if (currentStart !== null) {
+          segments.push({ startIdx: currentStart, endIdx: results.length - 1 })
+        }
+        if (segments.length === 0) return
+
+        const ctx = chart.ctx
+        const xAxis = chart.scales.x
+        const chartArea = chart.chartArea
+        if (!chartArea) return
+
+        const step = xAxis.getPixelForValue(1) - xAxis.getPixelForValue(0)
+        const halfStep = step / 2
+
+        ctx.save()
+        ctx.fillStyle = 'rgba(231, 29, 54, 0.30)'
+        for (const seg of segments) {
+          const xStart = xAxis.getPixelForValue(seg.startIdx)
+          const xEnd = xAxis.getPixelForValue(seg.endIdx)
+          ctx.fillRect(
+            xStart - halfStep,
+            chartArea.top,
+            xEnd - xStart + step,
+            chartArea.bottom - chartArea.top
+          )
+        }
+        ctx.restore()
+      },
+    }
+  }, [data, groupBy])
+
   const options: ChartOptions<'line'> = useMemo(
     () => ({
       responsive: true,
@@ -175,6 +243,7 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
         intersect: false,
       },
       plugins: {
+        peakHourBand: {},
         legend: {
           display: true,
           position: 'top',
@@ -185,6 +254,14 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
             padding: 16,
             font: {
               size: 11,
+            },
+            filter: (item) => {
+              const text = item.text
+              return (
+                !text.startsWith('Máxima:') &&
+                !text.startsWith('Contratada:') &&
+                !text.startsWith('Instalada:')
+              )
             },
           },
         },
@@ -269,14 +346,32 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
               Monitoreo continuo de los niveles de potencia por punto de medición
             </CardDescription>
           </div>
-          <div className="min-w-[140px]">
-            <ZeiaSelect
-              options={groupByOptions}
-              value={groupBy}
-              onChange={(val) => setGroupBy(val as GroupBy)}
-              placeholder="Agrupar por"
-              icon={Clock}
-            />
+          <div className="flex items-center gap-3">
+            {groupBy === 'hour' && (
+              <div className="flex items-center gap-2 rounded-lg border-l-4 border-[#E71D36] bg-[#E71D36]/10 px-3 py-1.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E71D36] opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#E71D36]" />
+                </span>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#E71D36]">
+                    Hora punta
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-[#E71D36]">
+                    18:00 – 23:00
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="min-w-[140px]">
+              <ZeiaSelect
+                options={groupByOptions}
+                value={groupBy}
+                onChange={(val) => setGroupBy(val as GroupBy)}
+                placeholder="Agrupar por"
+                icon={Clock}
+              />
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -297,7 +392,7 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
           </div>
         ) : (
           <div className="flex-1 min-h-[400px]">
-            <Line data={chartData} options={options} />
+            <Line data={chartData} options={options} plugins={[peakHourPlugin]} />
           </div>
         )}
       </CardContent>

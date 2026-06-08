@@ -1,8 +1,9 @@
-import { useEffect, useCallback, useMemo, useRef } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { useSearch, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchHeadquarters } from '../api/headquarters'
 import { fetchDeviceMeasurementPointsList } from '../api/measurement-points'
+import { fetchFavoritePoints } from '../api/favorite-points'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
 
 export const VALID_CATEGORIES = ['power', 'energy', 'current', 'voltage'] as const
@@ -25,6 +26,32 @@ export function useHomeFilters() {
   const dateBefore = parseDateSafe(typeof search.hasta === 'string' ? search.hasta : undefined)
 
   const today = useMemo(() => new Date(), [])
+
+  // Fetch favorite points
+  const { data: favoritePointsData, isLoading: isLoadingFavoritePoints } = useQuery({
+    queryKey: ['favorite-points'],
+    queryFn: fetchFavoritePoints,
+  })
+
+  const favoritePoints = useMemo(() => favoritePointsData?.results ?? [], [favoritePointsData])
+
+  // Track selected favorite point (not persisted in URL)
+  const [selectedFavoriteId, setSelectedFavoriteId] = useState<number | null>(null)
+
+  // Sync selectedFavoriteId with URL params: if the current sede/panel/punto
+  // no longer matches the selected favorite, clear it
+  useEffect(() => {
+    if (selectedFavoriteId === null) return
+    const selected = favoritePoints.find((f) => f.id === selectedFavoriteId)
+    if (!selected) return
+    const matches =
+      sedeId === selected.energy_headquarter_id &&
+      panelId === selected.electrical_panel_id &&
+      puntoId === selected.measurement_point
+    if (!matches) {
+      setSelectedFavoriteId(null)
+    }
+  }, [sedeId, panelId, puntoId, favoritePoints, selectedFavoriteId])
 
   // Fetch headquarters
   const { data: headquartersData, isLoading: isLoadingHeadquarters } = useQuery({
@@ -250,6 +277,26 @@ export function useHomeFilters() {
     [navigate, sedeId, panelId, puntoId, category, dateAfter, dateBefore, today]
   )
 
+  const setFavoritePoint = useCallback(
+    (favoriteId: number) => {
+      const favorite = favoritePoints.find((f) => f.id === favoriteId)
+      if (!favorite) return
+      setSelectedFavoriteId(favoriteId)
+      navigate({
+        search: {
+          sede: String(favorite.energy_headquarter_id),
+          panel: String(favorite.electrical_panel_id),
+          punto: String(favorite.measurement_point),
+          categoria: category ?? 'power',
+          pagina: undefined,
+          desde: formatDateISO(dateAfter ?? today),
+          hasta: formatDateISO(dateBefore ?? today),
+        },
+      })
+    },
+    [navigate, favoritePoints, category, dateAfter, dateBefore, today]
+  )
+
   const isReady = !!sedeId && !!panelId && !!puntoId && !!dateAfter && !!dateBefore && !!category
 
   return {
@@ -259,6 +306,7 @@ export function useHomeFilters() {
     measurementPoints,
     currentHeadquarter,
     currentPanel,
+    favoritePoints,
 
     // State (from URL)
     sedeId,
@@ -269,6 +317,9 @@ export function useHomeFilters() {
     dateAfter,
     dateBefore,
 
+    // State (local UI)
+    selectedFavoriteId,
+
     // Handlers
     setSedeId,
     setPanelId,
@@ -276,10 +327,12 @@ export function useHomeFilters() {
     setCategory,
     setDateRange,
     setPage,
+    setFavoritePoint,
 
     // Status
     isLoadingHeadquarters,
     isLoadingMeasurementPoints,
+    isLoadingFavoritePoints,
     isReady,
   }
 }

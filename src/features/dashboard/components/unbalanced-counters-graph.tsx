@@ -15,7 +15,7 @@ import { Activity } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { fetchUnbalancedCurrentCountersGraph } from '@/features/dashboard/api/unbalanced-current'
 import { fetchUnbalancedVoltageCountersGraph } from '@/features/dashboard/api/unbalanced-voltage'
-import { formatDateISO } from '@/lib/date-utils'
+import { formatDateISO, formatDateShort } from '@/lib/date-utils'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
@@ -44,10 +44,7 @@ const TYPE_CONFIG: Record<UnbalancedType, { title: string; color: string; fetchF
 }
 
 function formatDateLabel(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  return `${day}/${month}`
+  return formatDateShort(dateStr)
 }
 
 export function UnbalancedCountersGraph({
@@ -115,12 +112,7 @@ export function UnbalancedCountersGraph({
               const rawIndex = item?.dataIndex ?? 0
               const raw = results[rawIndex]
               if (!raw) return ''
-              const date = new Date(raw.date + 'T00:00:00')
-              return date.toLocaleDateString('es-PE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })
+              return formatDateShort(raw.date)
             },
             label: (context) => {
               const value = context.raw as number
@@ -143,7 +135,7 @@ export function UnbalancedCountersGraph({
         y: {
           title: {
             display: true,
-            text: 'Conteo de Desbalance',
+            text: 'Eventos de Desbalance',
             color: '#88939b',
             font: {
               size: 12,

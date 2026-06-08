@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { DashboardShell } from '@/features/dashboard/components/shell'
 import { HomeFilters } from '@/features/dashboard/components/home-filters'
 import { ReadingsTable } from '@/features/dashboard/components/readings-table'
@@ -7,6 +8,7 @@ import { ReadingsGraph } from '@/features/dashboard/components/readings-graph'
 import { useHomeFilters } from '@/features/dashboard/hooks/use-home-filters'
 import { fetchReadings } from '@/features/dashboard/api/readings'
 import { formatDateISO } from '@/lib/date-utils'
+import { getElectricParameter } from '@/lib/electric-parameters'
 
 export const Route = createFileRoute('/energia/dashboard/home')({
   component: HomeDashboardPage,
@@ -55,6 +57,15 @@ function HomeDashboardPage() {
       ? Object.keys(readingsData.results[0].indicators.values)
       : []
 
+  const [activeIndicator, setActiveIndicator] = useState<string | null>(null)
+
+  const resolvedIndicator =
+    activeIndicator && indicatorKeys.includes(activeIndicator)
+      ? activeIndicator
+      : (indicatorKeys[0] ?? 'P')
+
+  const indicatorLabel = getElectricParameter(resolvedIndicator)?.parameter ?? resolvedIndicator
+
   return (
     <DashboardShell>
       <div className="space-y-6">
@@ -75,6 +86,7 @@ function HomeDashboardPage() {
               dateBefore={dateBefore}
               page={page}
               onPageChange={setPage}
+              indicatorLabel={indicatorLabel}
             />
             <ReadingsGraph
               headquarterId={sedeId}
@@ -84,6 +96,8 @@ function HomeDashboardPage() {
               dateBefore={dateBefore}
               category={category}
               availableIndicators={indicatorKeys}
+              activeIndicator={resolvedIndicator}
+              onIndicatorChange={setActiveIndicator}
             />
           </div>
         ) : (
