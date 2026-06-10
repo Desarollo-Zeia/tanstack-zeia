@@ -43,13 +43,27 @@ function getMonthRange(year: number, month: number): { startDate: Date; endDate:
   return { startDate, endDate }
 }
 
+function formatMonthRange(monthValue: string): string {
+  if (!monthValue || !monthValue.includes('-')) return '—'
+  const [year, month] = monthValue.split('-').map(Number)
+  const startDate = new Date(year, month - 1, 1)
+  const endDate = new Date(year, month, 0)
+  const startDay = startDate.getDate()
+  const endDay = endDate.getDate()
+  const startMonth = startDate.toLocaleString('es-ES', { month: 'long' })
+  const endMonth = endDate.toLocaleString('es-ES', { month: 'long' })
+  return `${startDay} de ${startMonth} — ${endDay} de ${endMonth}`
+}
+
 function useBillingData(
   sedeId: number,
   monthValue: string | null
 ) {
   const dateRange = useMemo(() => {
     if (!monthValue) return { startDate: null, endDate: null }
-    const [year, month] = monthValue.split('-').map(Number)
+    const parts = monthValue.split('-')
+    if (parts.length !== 2) return { startDate: null, endDate: null }
+    const [year, month] = parts.map(Number)
     return getMonthRange(year, month - 1)
   }, [monthValue])
 
@@ -74,13 +88,6 @@ interface BillingCardProps {
   defaultMonthValue: string
 }
 
-function formatAPIDate(dateStr: string): string {
-  const date = new Date(dateStr.split(' ')[0] + 'T00:00:00')
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = date.toLocaleString('es-ES', { month: 'long' })
-  return `${day} de ${month}`
-}
-
 const MONTH_OPTIONS = getMonthOptions()
 
 function BillingCard({ title, sedeId, defaultMonthValue }: BillingCardProps) {
@@ -103,14 +110,10 @@ function BillingCard({ title, sedeId, defaultMonthValue }: BillingCardProps) {
         <h3 className="text-sm font-semibold text-primary tracking-wide">
           {title}
         </h3>
-        {data && !isLoading && (
-          <div className="flex items-center gap-1.5 text-xs text-text-muted mt-1">
-            <Calendar className="w-3 h-3" />
-            <span>
-              {formatAPIDate(data.date_first_value)} — {formatAPIDate(data.date_last_value)}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 text-xs text-text-muted mt-1">
+          <Calendar className="w-3 h-3" />
+          <span>{formatMonthRange(monthValue)}</span>
+        </div>
         <div className="absolute top-2 right-4 w-40">
           <ZeiaSelect
             options={selectOptions}

@@ -7,17 +7,21 @@ interface BillingCycleTableProps {
   sedeId: number
 }
 
-function parseCycleDate(dateStr: string): Date {
+function parseCycleDate(dateStr: string): Date | null {
+  if (!dateStr) return null
   const months: Record<string, number> = {
     Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
     Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
   }
-  const [day, month, year] = dateStr.split('-')
+  const parts = dateStr.split('-')
+  if (parts.length !== 3) return null
+  const [day, month, year] = parts
   return new Date(Number(year), months[month] ?? 0, Number(day))
 }
 
 function formatCycleDate(dateStr: string): string {
   const date = parseCycleDate(dateStr)
+  if (!date) return dateStr || '—'
   const day = date.getDate().toString().padStart(2, '0')
   const month = date.toLocaleString('es-ES', { month: 'long' })
   return `${day} ${month}`
