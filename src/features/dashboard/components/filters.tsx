@@ -48,7 +48,9 @@ export function DashboardFilters() {
       {/* Panel Selector */}
       <div className="flex flex-col gap-1.5 min-w-[240px]">
         <label className="label-executive" style={{ color: '#88939b' }}>Panel Eléctrico</label>
-        {panels.length === 0 ? (
+        {isLoadingHeadquarters ? (
+          <div className="w-full h-[43px] rounded-lg border border-border bg-card animate-pulse" />
+        ) : panels.length === 0 ? (
           <div className="w-full h-[43px] rounded-lg border border-border bg-card flex items-center px-4 text-sm text-text-muted">
             Seleccione una sede primero
           </div>

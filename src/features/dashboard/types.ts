@@ -352,3 +352,11 @@ export interface RateConsumptionDetailTariffResponse {
   unit_energy: string
   unit_power: string
 }
+
+// COES Peak Demand Range
+export interface PeakDemandRangeResponse {
+  date: string
+  hour_start: string
+  hour_end: string
+  description: string
+}

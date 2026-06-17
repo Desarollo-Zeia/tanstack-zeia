@@ -82,20 +82,44 @@ describe('usePanelReadingsFilters', () => {
     mockSearch = {}
   })
 
-  it('auto-selects first active headquarter, panel, weekday, year and month', async () => {
-    renderHook(() => usePanelReadingsFilters(), { wrapper: createWrapper() })
+  it('derives sede, panel and punto from main filters without navigating', async () => {
+    mockSearch = { sede: '67', panel: '39' }
+
+    const { result } = renderHook(() => usePanelReadingsFilters(), { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalled()
+      expect(result.current.isReady).toBe(true)
     })
 
-    const lastCall = mockNavigate.mock.calls[mockNavigate.mock.calls.length - 1]
-    const search = lastCall[0].search
-    expect(search.mp_sede).toBe('67')
-    expect(search.mp_panel).toBe('39')
-    expect(search.mp_weekday).toBe('weekdays')
-    expect(search.mp_anio).toMatch(/^\d{4}$/)
-    expect(search.mp_mes).toMatch(/^\d+$/)
+    expect(mockNavigate).not.toHaveBeenCalled()
+    expect(result.current.sedeId).toBe(67)
+    expect(result.current.panelId).toBe(39)
+    expect(result.current.puntoId).toBe(77)
+    expect(result.current.indicador).toBe('EPpos')
+    expect(result.current.weekday).toBe('weekdays')
+    expect(result.current.anio).toBe(new Date().getFullYear())
+    expect(result.current.mes).toBe(new Date().getMonth())
+  })
+
+  it('prefers explicit mp_* params over main filters', async () => {
+    mockSearch = {
+      sede: '67',
+      panel: '39',
+      mp_sede: '67',
+      mp_panel: '39',
+      mp_punto: '78',
+    }
+
+    const { result } = renderHook(() => usePanelReadingsFilters(), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(result.current.puntoId).toBe(78)
+    })
+
+    expect(result.current.sedeId).toBe(67)
+    expect(result.current.panelId).toBe(39)
   })
 
   it('reads initial state from URL params', async () => {

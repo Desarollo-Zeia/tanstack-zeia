@@ -243,15 +243,59 @@ describe('PanelPage', () => {
     }
   })
 
+  it('auto-selects first sede and panel on empty URL without collisions', async () => {
+    mockSearch = {}
+
+    const { unmount } = render(<PanelPage />, { wrapper: createWrapper() })
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search: expect.objectContaining({
+            sede: '67',
+            panel: '39',
+          }),
+        })
+      )
+    })
+
+    // Panel readings filters must not collide and overwrite sede/panel.
+    // (useDashboardFilters may fire from two component instances, but every
+    // navigation must keep sede=67 and panel=39.)
+    const navigationsWithMainFilters = mockNavigate.mock.calls.filter((call) => {
+      const search = call[0].search
+      return search?.sede === '67' && search?.panel === '39'
+    })
+    expect(navigationsWithMainFilters.length).toBe(mockNavigate.mock.calls.length)
+
+    unmount()
+
+    // Re-render with updated URL to verify data loads with auto-selected filters
+    function createWrapperEmpty() {
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, staleTime: 0 },
+        },
+      })
+      return function Wrapper({ children }: { children: React.ReactNode }) {
+        return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      }
+    }
+
+    render(<PanelPage />, { wrapper: createWrapperEmpty() })
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /distribución de consumo — tg-tr2/i })).toBeInTheDocument()
+    })
+  })
+
   it('renders initial panel data correctly', async () => {
     render(<PanelPage />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('TTA-TR1')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /distribución de consumo — tta-tr1/i })).toBeInTheDocument()
     })
 
-    // Title should show panel name
-    expect(screen.getByRole('heading', { name: /distribución de consumo — tta-tr1/i })).toBeInTheDocument()
     // Main point should be visible in the list header
     const redNormalElements = screen.getAllByText('Red normal')
     expect(redNormalElements.length).toBeGreaterThanOrEqual(1)
@@ -262,10 +306,10 @@ describe('PanelPage', () => {
     render(<PanelPage />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('TTA-TR1')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /distribución de consumo — tta-tr1/i })).toBeInTheDocument()
     })
 
-    // Open panel dropdown (second combobox)
+    // Open main panel dropdown (second combobox)
     const dropdowns = screen.getAllByRole('combobox')
     const panelDropdown = dropdowns[1]
     await user.click(panelDropdown)
@@ -289,7 +333,7 @@ describe('PanelPage', () => {
     const { unmount } = render(<PanelPage />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('TTA-TR1')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /distribución de consumo — tta-tr1/i })).toBeInTheDocument()
     })
 
     unmount()

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useRef } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useSearch, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchHeadquarters } from '../api/headquarters'
@@ -78,9 +78,13 @@ export function usePanelReadingsFilters() {
 
   const today = useMemo(() => new Date(), [])
 
-  const sedeId = typeof search.mp_sede === 'string' ? Number(search.mp_sede) : null
-  const panelId = typeof search.mp_panel === 'string' ? Number(search.mp_panel) : null
-  const puntoId = typeof search.mp_punto === 'string' ? Number(search.mp_punto) : null
+  const rawSedeId = typeof search.mp_sede === 'string' ? Number(search.mp_sede) : null
+  const rawPanelId = typeof search.mp_panel === 'string' ? Number(search.mp_panel) : null
+  const rawPuntoId = typeof search.mp_punto === 'string' ? Number(search.mp_punto) : null
+
+  // Filtros de lecturas heredan de los filtros principales hasta que el usuario los modifica
+  const sedeId = rawSedeId ?? (typeof search.sede === 'string' ? Number(search.sede) : null)
+  const panelId = rawPanelId ?? (typeof search.panel === 'string' ? Number(search.panel) : null)
   const indicador: EnergyIndicatorKey = isEnergyIndicator(search.mp_indicador)
     ? search.mp_indicador
     : DEFAULT_INDICATOR
@@ -118,111 +122,10 @@ export function usePanelReadingsFilters() {
     return measurementPointsData?.results.filter((mp) => mp.is_active) ?? []
   }, [measurementPointsData])
 
-  const hasAutoSelected = useRef(false)
-  const hasAutoSelectedPunto = useRef(false)
-  const lastPanelIdForPunto = useRef<number | null>(null)
-
-  useEffect(() => {
-    if (hasAutoSelected.current) return
-    if (headquarters.length === 0) return
-
-    const firstActiveSede = headquarters.find((h) => h.is_active) ?? headquarters[0]
-    const targetSedeId = sedeId ?? firstActiveSede?.id ?? null
-
-    if (!targetSedeId) return
-
-    const targetHeadquarter = headquarters.find((h) => h.id === targetSedeId)
-    const availablePanels = targetHeadquarter?.electrical_panels.filter((p) => p.is_active) ?? []
-    const targetPanelId = panelId ?? availablePanels[0]?.id ?? null
-
-    const needsNavigation =
-      sedeId !== targetSedeId ||
-      panelId !== targetPanelId ||
-      !search.mp_anio ||
-      !search.mp_mes ||
-      !search.mp_weekday
-
-    if (needsNavigation) {
-      hasAutoSelected.current = true
-      navigate({
-        search: {
-          sede: search.sede,
-          panel: search.panel,
-          desde: search.desde,
-          hasta: search.hasta,
-          mp_sede: String(targetSedeId),
-          mp_panel: targetPanelId ? String(targetPanelId) : undefined,
-          mp_punto: undefined,
-          mp_indicador: search.mp_indicador ?? DEFAULT_INDICATOR,
-          mp_weekday: search.mp_weekday ?? 'weekdays',
-          mp_anio: search.mp_anio ?? String(today.getFullYear()),
-          mp_mes: search.mp_mes ?? String(today.getMonth()),
-        },
-        ...NO_SCROLL,
-      })
-    }
-  }, [
-    headquarters,
-    sedeId,
-    panelId,
-    today,
-    navigate,
-    search.sede,
-    search.panel,
-    search.desde,
-    search.hasta,
-    search.mp_anio,
-    search.mp_mes,
-    search.mp_weekday,
-    search.mp_indicador,
-  ])
-
-  useEffect(() => {
-    if (panelId !== lastPanelIdForPunto.current) {
-      hasAutoSelectedPunto.current = false
-      lastPanelIdForPunto.current = panelId
-    }
-
-    if (hasAutoSelectedPunto.current) return
-    if (puntoId !== null) {
-      hasAutoSelectedPunto.current = true
-      return
-    }
-    if (measurementPoints.length === 0) return
-
-    hasAutoSelectedPunto.current = true
-    navigate({
-      search: {
-        sede: search.sede,
-        panel: search.panel,
-        desde: search.desde,
-        hasta: search.hasta,
-        mp_sede: String(sedeId),
-        mp_panel: String(panelId),
-        mp_punto: String(measurementPoints[0].id),
-        mp_indicador: indicador,
-        mp_weekday: weekday,
-        mp_anio: String(anio),
-        mp_mes: String(mes),
-      },
-      ...NO_SCROLL,
-    })
-  }, [
-    measurementPoints,
-    puntoId,
-    panelId,
-    sedeId,
-    indicador,
-    weekday,
-    anio,
-    mes,
-    today,
-    navigate,
-    search.sede,
-    search.panel,
-    search.desde,
-    search.hasta,
-  ])
+  // Si no hay punto explícito en URL, usa el primer punto activo disponible
+  const puntoId = useMemo(() => {
+    return rawPuntoId ?? measurementPoints[0]?.id ?? null
+  }, [rawPuntoId, measurementPoints])
 
   const setSedeId = useCallback(
     (id: number) => {
@@ -333,7 +236,7 @@ export function usePanelReadingsFilters() {
           hasta: search.hasta,
           mp_sede: String(sedeId),
           mp_panel: String(panelId),
-          mp_punto: String(puntoId),
+          mp_punto: puntoId ? String(puntoId) : undefined,
           mp_indicador: value,
           mp_weekday: weekday,
           mp_anio: String(anio),
@@ -367,7 +270,7 @@ export function usePanelReadingsFilters() {
           hasta: search.hasta,
           mp_sede: String(sedeId),
           mp_panel: String(panelId),
-          mp_punto: String(puntoId),
+          mp_punto: puntoId ? String(puntoId) : undefined,
           mp_indicador: indicador,
           mp_weekday: value,
           mp_anio: String(anio),
@@ -401,7 +304,7 @@ export function usePanelReadingsFilters() {
           hasta: search.hasta,
           mp_sede: String(sedeId),
           mp_panel: String(panelId),
-          mp_punto: String(puntoId),
+          mp_punto: puntoId ? String(puntoId) : undefined,
           mp_indicador: indicador,
           mp_weekday: weekday,
           mp_anio: String(value),
@@ -435,7 +338,7 @@ export function usePanelReadingsFilters() {
           hasta: search.hasta,
           mp_sede: String(sedeId),
           mp_panel: String(panelId),
-          mp_punto: String(puntoId),
+          mp_punto: puntoId ? String(puntoId) : undefined,
           mp_indicador: indicador,
           mp_weekday: weekday,
           mp_anio: String(anio),
