@@ -2,21 +2,23 @@ import { useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearch, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchHeadquarters } from '../api/headquarters'
+import { fetchDeviceMeasurementPointsList } from '../api/measurement-points'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
 
-export function useDashboardFilters() {
-  const navigate = useNavigate({ from: '/energia/dashboard/panel' })
-  const search = useSearch({ from: '/energia/dashboard/panel' })
+const NO_SCROLL = { resetScroll: false, hashScrollIntoView: false } as const
 
-  // Read ALL state directly from URL — single source of truth
+export function useDesbalanceAlertasFilters() {
+  const navigate = useNavigate({ from: '/energia/dashboard/desbalance/alertas' })
+  const search = useSearch({ from: '/energia/dashboard/desbalance/alertas' })
+
   const sedeId = typeof search.sede === 'string' ? Number(search.sede) : null
   const panelId = typeof search.panel === 'string' ? Number(search.panel) : null
+  const puntoId = typeof search.punto === 'string' ? Number(search.punto) : null
   const dateAfter = parseDateSafe(typeof search.desde === 'string' ? search.desde : undefined)
   const dateBefore = parseDateSafe(typeof search.hasta === 'string' ? search.hasta : undefined)
 
   const today = useMemo(() => new Date(), [])
 
-  // Fetch headquarters
   const { data: headquartersData, isLoading: isLoadingHeadquarters } = useQuery({
     queryKey: ['headquarters'],
     queryFn: fetchHeadquarters,
@@ -24,7 +26,6 @@ export function useDashboardFilters() {
 
   const headquarters = useMemo(() => headquartersData?.results ?? [], [headquartersData])
 
-  // Derived: current headquarter and panels
   const currentHeadquarter = useMemo(() => {
     return headquarters.find((h) => h.id === sedeId) ?? null
   }, [headquarters, sedeId])
@@ -33,8 +34,26 @@ export function useDashboardFilters() {
     return currentHeadquarter?.electrical_panels.filter((p) => p.is_active) ?? []
   }, [currentHeadquarter])
 
-  // Auto-select: if URL is missing values, navigate to defaults
+  const currentPanel = useMemo(() => {
+    return panels.find((p) => p.id === panelId) ?? null
+  }, [panels, panelId])
+
+  const { data: measurementPointsData, isLoading: isLoadingMeasurementPoints } = useQuery({
+    queryKey: ['device-measurement-points-list', sedeId, panelId],
+    queryFn: () => {
+      if (!sedeId || !panelId) throw new Error('Missing required parameters')
+      return fetchDeviceMeasurementPointsList(sedeId, panelId)
+    },
+    enabled: !!sedeId && !!panelId,
+  })
+
+  const measurementPoints = useMemo(() => {
+    return measurementPointsData?.results.filter((mp) => mp.is_active) ?? []
+  }, [measurementPointsData])
+
   const hasAutoSelected = useRef(false)
+  const hasAutoSelectedPunto = useRef(false)
+  const lastPanelIdForPunto = useRef<number | null>(null)
 
   useEffect(() => {
     if (hasAutoSelected.current) return
@@ -64,59 +83,55 @@ export function useDashboardFilters() {
         search: {
           sede: String(targetSedeId),
           panel: targetPanelId ? String(targetPanelId) : undefined,
+          punto: undefined,
           desde: formatDateISO(targetDateAfter),
           hasta: formatDateISO(targetDateBefore),
-          mp_sede: search.mp_sede,
-          mp_panel: search.mp_panel,
-          mp_punto: search.mp_punto,
-          mp_indicador: search.mp_indicador,
-          mp_weekday: search.mp_weekday,
-          mp_anio: search.mp_anio,
-          mp_mes: search.mp_mes,
         },
-        resetScroll: false,
-        hashScrollIntoView: false,
+        ...NO_SCROLL,
       })
     }
-  }, [
-    headquarters,
-    sedeId,
-    panelId,
-    dateAfter,
-    dateBefore,
-    today,
-    navigate,
-    search.mp_sede,
-    search.mp_panel,
-    search.mp_punto,
-    search.mp_indicador,
-    search.mp_weekday,
-    search.mp_anio,
-    search.mp_mes,
-  ])
+  }, [headquarters, sedeId, panelId, dateAfter, dateBefore, today, navigate])
 
-  // Handlers — just navigate, no local state
+  useEffect(() => {
+    if (panelId !== lastPanelIdForPunto.current) {
+      hasAutoSelectedPunto.current = false
+      lastPanelIdForPunto.current = panelId
+    }
+
+    if (hasAutoSelectedPunto.current) return
+    if (puntoId !== null) {
+      hasAutoSelectedPunto.current = true
+      return
+    }
+    if (measurementPoints.length === 0) return
+
+    hasAutoSelectedPunto.current = true
+    navigate({
+      search: {
+        sede: String(sedeId),
+        panel: String(panelId),
+        punto: String(measurementPoints[0].id),
+        desde: formatDateISO(dateAfter ?? today),
+        hasta: formatDateISO(dateBefore ?? today),
+      },
+      ...NO_SCROLL,
+    })
+  }, [measurementPoints, puntoId, panelId, sedeId, dateAfter, dateBefore, today, navigate])
+
   const setSedeId = useCallback(
     (id: number) => {
       navigate({
         search: {
           sede: String(id),
-          panel: undefined, // Reset panel when sede changes
+          panel: undefined,
+          punto: undefined,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
-          mp_sede: search.mp_sede,
-          mp_panel: search.mp_panel,
-          mp_punto: search.mp_punto,
-          mp_indicador: search.mp_indicador,
-          mp_weekday: search.mp_weekday,
-          mp_anio: search.mp_anio,
-          mp_mes: search.mp_mes,
         },
-        resetScroll: false,
-        hashScrollIntoView: false,
+        ...NO_SCROLL,
       })
     },
-    [navigate, dateAfter, dateBefore, today, search.mp_sede, search.mp_panel, search.mp_punto, search.mp_indicador, search.mp_weekday, search.mp_anio, search.mp_mes]
+    [navigate, dateAfter, dateBefore, today]
   )
 
   const setPanelId = useCallback(
@@ -125,21 +140,30 @@ export function useDashboardFilters() {
         search: {
           sede: String(sedeId),
           panel: String(id),
+          punto: undefined,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
-          mp_sede: search.mp_sede,
-          mp_panel: search.mp_panel,
-          mp_punto: search.mp_punto,
-          mp_indicador: search.mp_indicador,
-          mp_weekday: search.mp_weekday,
-          mp_anio: search.mp_anio,
-          mp_mes: search.mp_mes,
         },
-        resetScroll: false,
-        hashScrollIntoView: false,
+        ...NO_SCROLL,
       })
     },
-    [navigate, sedeId, dateAfter, dateBefore, today, search.mp_sede, search.mp_panel, search.mp_punto, search.mp_indicador, search.mp_weekday, search.mp_anio, search.mp_mes]
+    [navigate, sedeId, dateAfter, dateBefore, today]
+  )
+
+  const setPuntoId = useCallback(
+    (id: number) => {
+      navigate({
+        search: {
+          sede: String(sedeId),
+          panel: String(panelId),
+          punto: String(id),
+          desde: formatDateISO(dateAfter ?? today),
+          hasta: formatDateISO(dateBefore ?? today),
+        },
+        ...NO_SCROLL,
+      })
+    },
+    [navigate, sedeId, panelId, dateAfter, dateBefore, today]
   )
 
   const setDateRange = useCallback(
@@ -147,50 +171,36 @@ export function useDashboardFilters() {
       navigate({
         search: {
           sede: String(sedeId),
-          panel: panelId ? String(panelId) : undefined,
+          panel: String(panelId),
+          punto: String(puntoId),
           desde: formatDateISO(range.startDate),
           hasta: formatDateISO(range.endDate),
-          mp_sede: search.mp_sede,
-          mp_panel: search.mp_panel,
-          mp_punto: search.mp_punto,
-          mp_indicador: search.mp_indicador,
-          mp_weekday: search.mp_weekday,
-          mp_anio: search.mp_anio,
-          mp_mes: search.mp_mes,
         },
-        resetScroll: false,
-        hashScrollIntoView: false,
+        ...NO_SCROLL,
       })
     },
-    [navigate, sedeId, panelId, search.mp_sede, search.mp_panel, search.mp_punto, search.mp_indicador, search.mp_weekday, search.mp_anio, search.mp_mes]
+    [navigate, sedeId, panelId, puntoId]
   )
 
-  const currentPanel = useMemo(() => {
-    return panels.find((p) => p.id === panelId) ?? null
-  }, [panels, panelId])
-
-  const isReady = !!sedeId && !!panelId && !!dateAfter && !!dateBefore
+  const isReady = !!sedeId && !!panelId && !!puntoId && !!dateAfter && !!dateBefore
 
   return {
-    // Data
     headquarters,
     panels,
+    measurementPoints,
     currentHeadquarter,
     currentPanel,
-
-    // State (from URL)
     sedeId,
     panelId,
+    puntoId,
     dateAfter,
     dateBefore,
-
-    // Handlers
     setSedeId,
     setPanelId,
+    setPuntoId,
     setDateRange,
-
-    // Status
     isLoadingHeadquarters,
+    isLoadingMeasurementPoints,
     isReady,
   }
 }

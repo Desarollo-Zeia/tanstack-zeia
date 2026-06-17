@@ -212,6 +212,15 @@ vi.mock('@/features/dashboard/api/consumption', () => ({
   }),
 }))
 
+vi.mock('@/features/dashboard/api/measurement-points', () => ({
+  fetchMeasurementPoints: vi.fn().mockResolvedValue({ count: 0, results: [] }),
+  fetchDeviceMeasurementPointsList: vi.fn().mockResolvedValue({ count: 0, next: null, previous: null, results: [] }),
+}))
+
+vi.mock('@/features/dashboard/api/panel-readings-graph', () => ({
+  fetchPanelReadingsGraph: vi.fn().mockResolvedValue([]),
+}))
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -261,8 +270,8 @@ describe('PanelPage', () => {
     const panelDropdown = dropdowns[1]
     await user.click(panelDropdown)
 
-    // Select the other panel
-    const newPanelOption = screen.getByText('TG-TR2 (TF-AA) - HVAC')
+    // Select the other panel from the open dropdown options
+    const newPanelOption = await screen.findByRole('option', { name: 'TG-TR2 (TF-AA) - HVAC' })
     await user.click(newPanelOption)
 
     // Verify navigation was called with new panel
@@ -303,7 +312,7 @@ describe('PanelPage', () => {
 
     // Verify new panel data is displayed
     await waitFor(() => {
-      expect(screen.getByText('TG-TR2 (TF-AA) - HVAC')).toBeInTheDocument()
+      expect(screen.getAllByText('TG-TR2 (TF-AA) - HVAC').length).toBeGreaterThanOrEqual(1)
     })
 
     // Verify consumption distribution heading updated

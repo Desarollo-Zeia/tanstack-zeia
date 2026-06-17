@@ -109,6 +109,7 @@ All energy-related routes use the `/energia/` prefix (matching the API response)
 | `/energia/dashboard/home` | `src/routes/energia/dashboard/home.tsx` | Análisis por Indicador |
 | `/energia/dashboard/monitoreo` | `src/routes/energia/dashboard/monitoreo.tsx` | Monitoreo de Potencia |
 | `/energia/dashboard/desbalance` | `src/routes/energia/dashboard/desbalance.tsx` | Desbalance de Carga |
+| `/energia/dashboard/desbalance/alertas` | `src/routes/energia/dashboard/desbalance/alertas.tsx` | Alertas de Desbalance (subtipo `current_unbalance`) |
 | `/energia/dashboard/tarifario` | `src/routes/energia/dashboard/tarifario.tsx` | Consumo Tarifario |
 | `/energia/dashboard/comparador` | `src/routes/energia/dashboard/comparador.tsx` | Comparación por Día |
 | `/energia/dashboard/alertas` | `src/routes/energia/dashboard/alertas.tsx` | Alertas |
@@ -504,7 +505,8 @@ Then I will reply with the list of sections registered for that module.
 | Panel Dashboard | `/energia/dashboard/panel` | Filter Bar, KPI Row, Split View (Chart Section + Data List), Data Table |
 | Análisis por Indicador | `/energia/dashboard/home` | Filter Bar, Split View (Readings Table + Readings Graph) |
 | Monitoreo de Potencia | `/energia/dashboard/monitoreo` | (pending) |
-| Desbalance de Carga | `/energia/dashboard/desbalance` | (pending) |
+| Desbalance de Carga | `/energia/dashboard/desbalance` | Filter Bar (Sede, Panel, Punto, Fechas), Top 3 Cards (Mayor desbalance del día), Corriente/Voltaje Toggle + `UnbalancedCountersGraph`, "Ver alertas" button |
+| Alertas de Desbalance | `/energia/dashboard/desbalance/alertas` | Filter Bar (Sede, Panel, Punto, Fechas), Tabla histórica filtrada a subtipo `current_unbalance` con selector de Fase A/B/C |
 | Consumo Tarifario | `/energia/dashboard/tarifario` | Filter Bar (solo sede), Total Consumption Card, Billing Comparison (Split View), Billing Cycle Table |
 | Comparación por Día | `/energia/dashboard/comparador` | (pending) |
 | Alertas | `/energia/dashboard/alertas` | Filter Bar, Summary Card (panel name + today_count), Alerts Table (indicador, sub indicador, origen, fecha, hora, límite, valor) |

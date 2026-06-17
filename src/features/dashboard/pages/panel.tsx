@@ -3,15 +3,27 @@ import { Gauge, BarChart3 } from 'lucide-react'
 import { DashboardShell } from '@/features/dashboard/components/shell'
 import { DashboardFilters } from '@/features/dashboard/components/filters'
 import { useDashboardFilters } from '@/features/dashboard/hooks/use-dashboard-filters'
+import { usePanelReadingsFilters } from '@/features/dashboard/hooks/use-panel-readings-filters'
 import { fetchConsumptionDistribution } from '@/features/dashboard/api/consumption'
 import { ConsumptionPieChart } from '@/features/dashboard/components/consumption-pie-chart'
 import { ConsumptionDistributionList } from '@/features/dashboard/components/consumption-distribution-list'
 import { MeasurementPointsTable } from '@/features/dashboard/components/measurement-points-table'
+import { PanelReadingsFilters } from '@/features/dashboard/components/panel-readings-filters'
+import { PanelReadingsChart } from '@/features/dashboard/components/panel-readings-chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDateISO, formatDateReadable } from '@/lib/date-utils'
 
 export function PanelPage() {
   const { sedeId, panelId, dateAfter, dateBefore, isReady } = useDashboardFilters()
+  const {
+    sedeId: mpSedeId,
+    panelId: mpPanelId,
+    puntoId: mpPuntoId,
+    indicador: mpIndicador,
+    weekday: mpWeekday,
+    monthRange: mpMonthRange,
+    isReady: mpIsReady,
+  } = usePanelReadingsFilters()
 
   const dateAfterStr = dateAfter ? formatDateISO(dateAfter) : ''
   const dateBeforeStr = dateBefore ? formatDateISO(dateBefore) : ''
@@ -165,6 +177,22 @@ export function PanelPage() {
             panelId={panelId}
           />
         )}
+
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <PanelReadingsFilters />
+            <PanelReadingsChart
+              headquarterId={mpSedeId ?? 0}
+              panelId={mpPanelId ?? 0}
+              measurementPointId={mpPuntoId ?? 0}
+              dateAfter={mpMonthRange.start}
+              dateBefore={mpMonthRange.end}
+              indicador={mpIndicador}
+              weekday={mpWeekday}
+              isReady={mpIsReady}
+            />
+          </CardContent>
+        </Card>
       </div>
     </DashboardShell>
   )

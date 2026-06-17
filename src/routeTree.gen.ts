@@ -25,6 +25,7 @@ import { Route as AmbientalDashboardRoomsRouteImport } from './routes/ambiental/
 import { Route as AmbientalDashboardMonitoreoRouteImport } from './routes/ambiental/dashboard/monitoreo'
 import { Route as AmbientalDashboardAnalisisRouteImport } from './routes/ambiental/dashboard/analisis'
 import { Route as AmbientalDashboardAlertasRouteImport } from './routes/ambiental/dashboard/alertas'
+import { Route as EnergiaDashboardDesbalanceAlertasRouteImport } from './routes/energia/dashboard/desbalance/alertas'
 import { Route as AmbientalDashboardAnalisisPicoshistoricosRouteImport } from './routes/ambiental/dashboard/analisis/picoshistoricos'
 import { Route as AmbientalDashboardAnalisisIndicadoresRouteImport } from './routes/ambiental/dashboard/analisis/indicadores'
 import { Route as AmbientalDashboardAnalisisEstadisticasRouteImport } from './routes/ambiental/dashboard/analisis/estadisticas'
@@ -117,6 +118,12 @@ const AmbientalDashboardAlertasRoute =
     path: '/ambiental/dashboard/alertas',
     getParentRoute: () => rootRouteImport,
   } as any)
+const EnergiaDashboardDesbalanceAlertasRoute =
+  EnergiaDashboardDesbalanceAlertasRouteImport.update({
+    id: '/alertas',
+    path: '/alertas',
+    getParentRoute: () => EnergiaDashboardDesbalanceRoute,
+  } as any)
 const AmbientalDashboardAnalisisPicoshistoricosRoute =
   AmbientalDashboardAnalisisPicoshistoricosRouteImport.update({
     id: '/picoshistoricos',
@@ -148,7 +155,7 @@ export interface FileRoutesByFullPath {
   '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/alertas-historial': typeof EnergiaDashboardAlertasHistorialRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
-  '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRoute
+  '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRouteWithChildren
   '/energia/dashboard/home': typeof EnergiaDashboardHomeRoute
   '/energia/dashboard/monitoreo': typeof EnergiaDashboardMonitoreoRoute
   '/energia/dashboard/panel': typeof EnergiaDashboardPanelRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/ambiental/dashboard/analisis/estadisticas': typeof AmbientalDashboardAnalisisEstadisticasRoute
   '/ambiental/dashboard/analisis/indicadores': typeof AmbientalDashboardAnalisisIndicadoresRoute
   '/ambiental/dashboard/analisis/picoshistoricos': typeof AmbientalDashboardAnalisisPicoshistoricosRoute
+  '/energia/dashboard/desbalance/alertas': typeof EnergiaDashboardDesbalanceAlertasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -169,7 +177,7 @@ export interface FileRoutesByTo {
   '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/alertas-historial': typeof EnergiaDashboardAlertasHistorialRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
-  '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRoute
+  '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRouteWithChildren
   '/energia/dashboard/home': typeof EnergiaDashboardHomeRoute
   '/energia/dashboard/monitoreo': typeof EnergiaDashboardMonitoreoRoute
   '/energia/dashboard/panel': typeof EnergiaDashboardPanelRoute
@@ -177,6 +185,7 @@ export interface FileRoutesByTo {
   '/ambiental/dashboard/analisis/estadisticas': typeof AmbientalDashboardAnalisisEstadisticasRoute
   '/ambiental/dashboard/analisis/indicadores': typeof AmbientalDashboardAnalisisIndicadoresRoute
   '/ambiental/dashboard/analisis/picoshistoricos': typeof AmbientalDashboardAnalisisPicoshistoricosRoute
+  '/energia/dashboard/desbalance/alertas': typeof EnergiaDashboardDesbalanceAlertasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -191,7 +200,7 @@ export interface FileRoutesById {
   '/energia/dashboard/alertas': typeof EnergiaDashboardAlertasRoute
   '/energia/dashboard/alertas-historial': typeof EnergiaDashboardAlertasHistorialRoute
   '/energia/dashboard/comparador': typeof EnergiaDashboardComparadorRoute
-  '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRoute
+  '/energia/dashboard/desbalance': typeof EnergiaDashboardDesbalanceRouteWithChildren
   '/energia/dashboard/home': typeof EnergiaDashboardHomeRoute
   '/energia/dashboard/monitoreo': typeof EnergiaDashboardMonitoreoRoute
   '/energia/dashboard/panel': typeof EnergiaDashboardPanelRoute
@@ -199,6 +208,7 @@ export interface FileRoutesById {
   '/ambiental/dashboard/analisis/estadisticas': typeof AmbientalDashboardAnalisisEstadisticasRoute
   '/ambiental/dashboard/analisis/indicadores': typeof AmbientalDashboardAnalisisIndicadoresRoute
   '/ambiental/dashboard/analisis/picoshistoricos': typeof AmbientalDashboardAnalisisPicoshistoricosRoute
+  '/energia/dashboard/desbalance/alertas': typeof EnergiaDashboardDesbalanceAlertasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/ambiental/dashboard/analisis/estadisticas'
     | '/ambiental/dashboard/analisis/indicadores'
     | '/ambiental/dashboard/analisis/picoshistoricos'
+    | '/energia/dashboard/desbalance/alertas'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/ambiental/dashboard/analisis/estadisticas'
     | '/ambiental/dashboard/analisis/indicadores'
     | '/ambiental/dashboard/analisis/picoshistoricos'
+    | '/energia/dashboard/desbalance/alertas'
   id:
     | '__root__'
     | '/'
@@ -264,6 +276,7 @@ export interface FileRouteTypes {
     | '/ambiental/dashboard/analisis/estadisticas'
     | '/ambiental/dashboard/analisis/indicadores'
     | '/ambiental/dashboard/analisis/picoshistoricos'
+    | '/energia/dashboard/desbalance/alertas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -278,7 +291,7 @@ export interface RootRouteChildren {
   EnergiaDashboardAlertasRoute: typeof EnergiaDashboardAlertasRoute
   EnergiaDashboardAlertasHistorialRoute: typeof EnergiaDashboardAlertasHistorialRoute
   EnergiaDashboardComparadorRoute: typeof EnergiaDashboardComparadorRoute
-  EnergiaDashboardDesbalanceRoute: typeof EnergiaDashboardDesbalanceRoute
+  EnergiaDashboardDesbalanceRoute: typeof EnergiaDashboardDesbalanceRouteWithChildren
   EnergiaDashboardHomeRoute: typeof EnergiaDashboardHomeRoute
   EnergiaDashboardMonitoreoRoute: typeof EnergiaDashboardMonitoreoRoute
   EnergiaDashboardPanelRoute: typeof EnergiaDashboardPanelRoute
@@ -399,6 +412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AmbientalDashboardAlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/energia/dashboard/desbalance/alertas': {
+      id: '/energia/dashboard/desbalance/alertas'
+      path: '/alertas'
+      fullPath: '/energia/dashboard/desbalance/alertas'
+      preLoaderRoute: typeof EnergiaDashboardDesbalanceAlertasRouteImport
+      parentRoute: typeof EnergiaDashboardDesbalanceRoute
+    }
     '/ambiental/dashboard/analisis/picoshistoricos': {
       id: '/ambiental/dashboard/analisis/picoshistoricos'
       path: '/picoshistoricos'
@@ -444,6 +464,21 @@ const AmbientalDashboardAnalisisRouteWithChildren =
     AmbientalDashboardAnalisisRouteChildren,
   )
 
+interface EnergiaDashboardDesbalanceRouteChildren {
+  EnergiaDashboardDesbalanceAlertasRoute: typeof EnergiaDashboardDesbalanceAlertasRoute
+}
+
+const EnergiaDashboardDesbalanceRouteChildren: EnergiaDashboardDesbalanceRouteChildren =
+  {
+    EnergiaDashboardDesbalanceAlertasRoute:
+      EnergiaDashboardDesbalanceAlertasRoute,
+  }
+
+const EnergiaDashboardDesbalanceRouteWithChildren =
+  EnergiaDashboardDesbalanceRoute._addFileChildren(
+    EnergiaDashboardDesbalanceRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProfileRoute: ProfileRoute,
@@ -456,7 +491,7 @@ const rootRouteChildren: RootRouteChildren = {
   EnergiaDashboardAlertasRoute: EnergiaDashboardAlertasRoute,
   EnergiaDashboardAlertasHistorialRoute: EnergiaDashboardAlertasHistorialRoute,
   EnergiaDashboardComparadorRoute: EnergiaDashboardComparadorRoute,
-  EnergiaDashboardDesbalanceRoute: EnergiaDashboardDesbalanceRoute,
+  EnergiaDashboardDesbalanceRoute: EnergiaDashboardDesbalanceRouteWithChildren,
   EnergiaDashboardHomeRoute: EnergiaDashboardHomeRoute,
   EnergiaDashboardMonitoreoRoute: EnergiaDashboardMonitoreoRoute,
   EnergiaDashboardPanelRoute: EnergiaDashboardPanelRoute,
