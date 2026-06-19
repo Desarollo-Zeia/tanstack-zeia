@@ -14,7 +14,7 @@ export function DashboardHeader() {
   }
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
+    <header className="h-16 bg-[#F2F2F2] border-b border-border flex items-center justify-between px-6 shrink-0">
       {/* Left Section */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2.5">
@@ -47,7 +47,7 @@ export function DashboardHeader() {
           title="Cerrar sesión"
         >
           <LogOut className="w-4 h-4" />
-          <span className="text-sm font-medium">Salir</span>
+          <span className="text-sm font-medium">Cerrar Sesión</span>
         </button>
       </div>
     </header>

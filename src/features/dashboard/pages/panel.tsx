@@ -48,8 +48,8 @@ export function PanelPage() {
       <div className="space-y-6">
         <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#88939b' }}>Panel Dashboard</h1>
-            <p className="text-text-secondary">Vista general del sistema energético</p>
+            <h1 className="text-2xl font-bold text-primary">Panel Dashboard</h1>
+            <p className="text-primary">Vista general del sistema energético</p>
           </div>
           <DashboardFilters />
         </div>

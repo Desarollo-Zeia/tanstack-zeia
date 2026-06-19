@@ -8,7 +8,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[#F2F2F2]">
       <DashboardHeader />
       <div className="flex flex-1 overflow-hidden">
         <DashboardSidebar />

@@ -100,6 +100,11 @@ function SidebarLink({ href, icon, label, collapsed, active, indent }: SidebarLi
   return (
     <Link
       to={href}
+      onClick={(e) => {
+        if (active) {
+          e.preventDefault()
+        }
+      }}
       className={cn(
         'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 relative group',
         active
