@@ -21,7 +21,7 @@ export function OcupacionalHeader() {
   }
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
+    <header className="h-16 bg-[#F2F2F2] border-b border-border flex items-center justify-between px-6 shrink-0">
       <div className="flex items-center gap-2.5">
         <img
           src="/images/zeia-logo-first.png"
@@ -45,7 +45,7 @@ export function OcupacionalHeader() {
           title="Cerrar sesión"
         >
           <LogOut className="w-4 h-4" />
-          <span className="text-sm font-medium">Salir</span>
+          <span className="text-sm font-medium">Cerrar Sesión</span>
         </button>
       </div>
     </header>

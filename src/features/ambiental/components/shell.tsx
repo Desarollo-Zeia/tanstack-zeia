@@ -8,7 +8,7 @@ interface OcupacionalShellProps {
 
 export function OcupacionalShell({ children }: OcupacionalShellProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[#F2F2F2]">
       <OcupacionalHeader />
       <div className="flex flex-1 overflow-hidden">
         <OcupacionalSidebar />
