@@ -41,7 +41,7 @@ export function useEstadisticasFilters() {
         ? null
         : Number(search.intervalo)
       : null
-  const viewMode: ViewMode = search.vista === 'by-date' ? 'by-date' : 'by-room'
+  const viewMode: ViewMode = search.vista === 'by-room' ? 'by-room' : 'by-date'
 
   const today = useMemo(() => new Date(), [])
 

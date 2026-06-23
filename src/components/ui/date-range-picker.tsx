@@ -55,6 +55,10 @@ function getFirstDayOfMonth(year: number, month: number): number {
 
 export function DateRangePicker({ value, onChange, placeholder = 'Seleccionar fechas' }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [draftRange, setDraftRange] = useState<DateRange>(() => ({
+    startDate: value.startDate,
+    endDate: value.endDate,
+  }))
   const [viewDate, setViewDate] = useState(() => {
     // Start view at the month of startDate or today
     return value.startDate ? new Date(value.startDate) : new Date()
@@ -76,40 +80,39 @@ export function DateRangePicker({ value, onChange, placeholder = 'Seleccionar fe
     }
   }, [isOpen])
 
-  // viewDate is initialized from value.startDate; we don't need an effect
-  // because the parent controls the value and re-renders with new props
-
   const handleDayClick = useCallback(
     (day: number) => {
       const clickedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
 
-      if (!value.startDate || (value.startDate && value.endDate)) {
+      if (!draftRange.startDate || (draftRange.startDate && draftRange.endDate)) {
         // Start new selection
-        onChange({ startDate: clickedDate, endDate: null })
+        setDraftRange({ startDate: clickedDate, endDate: null })
         setSelecting('end')
-      } else if (selecting === 'end' || !value.endDate) {
+      } else if (selecting === 'end' || !draftRange.endDate) {
         // Complete selection
-        let start = value.startDate
+        let start = draftRange.startDate
         let end = clickedDate
         if (clickedDate < start) {
           [start, end] = [end, start]
         }
-        onChange({ startDate: start, endDate: end })
+        const confirmedRange = { startDate: start, endDate: end }
+        setDraftRange(confirmedRange)
+        onChange(confirmedRange)
         setSelecting(null)
         setHoverDate(null)
         setIsOpen(false)
       }
     },
-    [viewDate, value, selecting, onChange]
+    [viewDate, draftRange, selecting, onChange]
   )
 
   const handleDayHover = useCallback(
     (day: number) => {
-      if (selecting === 'end' && value.startDate && !value.endDate) {
+      if (selecting === 'end' && draftRange.startDate && !draftRange.endDate) {
         setHoverDate(new Date(viewDate.getFullYear(), viewDate.getMonth(), day))
       }
     },
-    [selecting, value.startDate, value.endDate, viewDate]
+    [selecting, draftRange.startDate, draftRange.endDate, viewDate]
   )
 
   const navigateMonth = (delta: number) => {
@@ -121,7 +124,9 @@ export function DateRangePicker({ value, onChange, placeholder = 'Seleccionar fe
   }
 
   const clearSelection = () => {
-    onChange({ startDate: null, endDate: null })
+    const emptyRange = { startDate: null, endDate: null }
+    setDraftRange(emptyRange)
+    onChange(emptyRange)
     setHoverDate(null)
     setSelecting(null)
   }
@@ -155,6 +160,7 @@ export function DateRangePicker({ value, onChange, placeholder = 'Seleccionar fe
 
   const allDays = [...prevMonthDays, ...currentMonthDays, ...nextMonthDays]
 
+  // Display always reflects the confirmed value, not the draft selection in progress
   const displayText = value.startDate
     ? `${formatDate(value.startDate)} — ${formatDate(value.endDate)}`
     : placeholder
@@ -164,7 +170,15 @@ export function DateRangePicker({ value, onChange, placeholder = 'Seleccionar fe
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) {
+            setDraftRange({ startDate: value.startDate, endDate: value.endDate })
+            setViewDate(value.startDate ? new Date(value.startDate) : new Date())
+            setHoverDate(null)
+            setSelecting(null)
+          }
+          setIsOpen(!isOpen)
+        }}
         className={cn(
           'flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm',
           'bg-card border-border hover:border-primary/30 hover:shadow-soft',
@@ -222,12 +236,12 @@ export function DateRangePicker({ value, onChange, placeholder = 'Seleccionar fe
 
               const isCurrentMonth = item.current
               const isToday = isSameDay(dateObj, new Date())
-              const isStart = value.startDate && isSameDay(dateObj, value.startDate)
-              const isEnd = value.endDate && isSameDay(dateObj, value.endDate)
+              const isStart = draftRange.startDate && isSameDay(dateObj, draftRange.startDate)
+              const isEnd = draftRange.endDate && isSameDay(dateObj, draftRange.endDate)
               const inRange =
-                value.startDate && value.endDate && isBetween(dateObj, value.startDate, value.endDate)
+                draftRange.startDate && draftRange.endDate && isBetween(dateObj, draftRange.startDate, draftRange.endDate)
               const inHoverRange =
-                value.startDate && hoverDate && !value.endDate && isBetween(dateObj, value.startDate, hoverDate)
+                draftRange.startDate && hoverDate && !draftRange.endDate && isBetween(dateObj, draftRange.startDate, hoverDate)
 
               return (
                 <button
@@ -243,8 +257,8 @@ export function DateRangePicker({ value, onChange, placeholder = 'Seleccionar fe
                     isToday && !isStart && !isEnd && 'border border-primary/40',
                     (isStart || isEnd) && 'bg-primary text-white font-semibold shadow-glow',
                     (inRange || inHoverRange) && !isStart && !isEnd && 'bg-primary/10 text-primary',
-                    isStart && value.endDate && 'rounded-r-none',
-                    isEnd && value.startDate && 'rounded-l-none',
+                    isStart && draftRange.endDate && 'rounded-r-none',
+                    isEnd && draftRange.startDate && 'rounded-l-none',
                     inRange && !isStart && !isEnd && 'rounded-none',
                     inHoverRange && !isStart && !isEnd && 'rounded-none'
                   )}
