@@ -97,6 +97,9 @@ function getChartOptions(unit: string): ChartOptions<'line'> {
       intersect: false,
     },
     plugins: {
+      datalabels: {
+        display: false,
+      },
       legend: {
         display: false,
       },

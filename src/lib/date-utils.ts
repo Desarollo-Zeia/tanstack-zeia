@@ -36,3 +36,13 @@ export function formatDateShort(dateStr: string): string {
   const month = months[date.getMonth()]
   return `${day} de ${month}`
 }
+
+export function formatTime(dateStr: string): string {
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return dateStr
+  return date.toLocaleTimeString('es-PE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}

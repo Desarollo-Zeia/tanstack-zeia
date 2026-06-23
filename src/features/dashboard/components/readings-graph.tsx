@@ -184,6 +184,9 @@ export function ReadingsGraph({
         intersect: false,
       },
       plugins: {
+        datalabels: {
+          display: false,
+        },
         legend: {
           display: false,
         },

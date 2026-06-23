@@ -243,6 +243,9 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
         intersect: false,
       },
       plugins: {
+        datalabels: {
+          display: false,
+        },
         peakHourBand: {},
         legend: {
           display: true,

@@ -360,3 +360,26 @@ export interface PeakDemandRangeResponse {
   hour_end: string
   description: string
 }
+
+// Imbalanced Events (current / voltage)
+export interface ImbalancedEvent {
+  id: number
+  created_at: string
+  device: {
+    name: string
+    dev_eui: string
+  }
+  values_per_channel: Array<{
+    channel: number
+    values: Record<string, number>
+  }>
+  balance_status: string
+  cuf_percentage: number
+}
+
+export interface ImbalancedEventsResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: ImbalancedEvent[]
+}

@@ -99,6 +99,9 @@ export function PanelReadingsChart({
         intersect: false,
       },
       plugins: {
+        datalabels: {
+          display: false,
+        },
         legend: {
           display: false,
         },
