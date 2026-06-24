@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { Zap, Activity, Bell } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
+import { Zap, Activity } from 'lucide-react'
 import { DashboardShell } from '@/features/dashboard/components/shell'
 import { DesbalanceFilters } from '@/features/dashboard/components/desbalance-filters'
 import { UnbalancedCountersGraph, type UnbalancedType } from '@/features/dashboard/components/unbalanced-counters-graph'
@@ -23,7 +23,6 @@ export const Route = createFileRoute('/energia/dashboard/desbalance')({
 })
 
 function DesbalancePage() {
-  const router = useRouter()
   const [activeType, setActiveType] = useState<UnbalancedType>('current')
   const { sedeId, panelId, puntoId, dateAfter, dateBefore, isReady } = useDesbalanceFilters()
 
@@ -81,7 +80,7 @@ function DesbalancePage() {
                     </button>
                   </div>
 
-                  <button
+                  {/* <button
                     onClick={() =>
                       router.navigate({
                         to: '/energia/dashboard/desbalance/alertas',
@@ -98,7 +97,7 @@ function DesbalancePage() {
                   >
                     <Bell className="w-4 h-4" />
                     Ver alertas
-                  </button>
+                  </button> */}
                 </div>
 
                 <UnbalancedCountersGraph
