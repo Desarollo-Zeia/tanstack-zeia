@@ -4,6 +4,7 @@ import { Zap, DollarSign, Calendar, TrendingUp, TrendingDown } from 'lucide-reac
 import { Card, CardContent } from '@/components/ui/card'
 import { ZeiaSelect } from '@/components/ui/select'
 import { fetchRateConsumptionDateRange } from '../api/rate-consumption-date-range'
+import type { RateConsumptionDateRangeResponse } from '../types'
 import { formatDateISO } from '@/lib/date-utils'
 
 interface BillingComparisonProps {
@@ -84,17 +85,15 @@ function useBillingData(
 
 interface BillingCardProps {
   title: string
-  sedeId: number
-  defaultMonthValue: string
+  monthValue: string
+  onMonthChange: (value: string) => void
+  data: RateConsumptionDateRangeResponse | undefined
+  isLoading: boolean
 }
 
 const MONTH_OPTIONS = getMonthOptions()
 
-function BillingCard({ title, sedeId, defaultMonthValue }: BillingCardProps) {
-  const [monthValue, setMonthValue] = useState<string>(defaultMonthValue)
-
-  const { data, isLoading } = useBillingData(sedeId, monthValue)
-
+function BillingCard({ title, monthValue, onMonthChange, data, isLoading }: BillingCardProps) {
   const formatNumber = (value: number, unit: string) => {
     return `${value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`
   }
@@ -118,7 +117,7 @@ function BillingCard({ title, sedeId, defaultMonthValue }: BillingCardProps) {
           <ZeiaSelect
             options={selectOptions}
             value={monthValue}
-            onChange={(val) => setMonthValue(val)}
+            onChange={(val) => onMonthChange(val)}
             placeholder="Seleccionar mes"
           />
         </div>
@@ -202,16 +201,18 @@ function BillingCard({ title, sedeId, defaultMonthValue }: BillingCardProps) {
 function DifferenceAlert({
   leftCost,
   rightCost,
+  isLoading,
 }: {
   leftCost: number | undefined
   rightCost: number | undefined
+  isLoading: boolean
 }) {
   const diff = useMemo(() => {
     if (leftCost === undefined || rightCost === undefined) return null
     return rightCost - leftCost
   }, [leftCost, rightCost])
 
-  if (diff === null) {
+  if (isLoading || diff === null) {
     return (
       <Card className="overflow-hidden">
         <CardContent className="p-4 flex items-center justify-center text-text-muted text-sm min-h-[60px]">
@@ -221,8 +222,24 @@ function DifferenceAlert({
     )
   }
 
-  const isIncrease = diff > 0
   const absDiff = Math.abs(diff)
+  const formattedDiff = `$${absDiff.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  if (diff === 0) {
+    return (
+      <Card className="overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-sm font-semibold text-text-secondary">
+              Tu consumo se mantuvo igual respecto al período anterior
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const isIncrease = diff > 0
 
   return (
     <Card className="overflow-hidden">
@@ -236,13 +253,13 @@ function DifferenceAlert({
           <span className="text-sm font-semibold">
             {isIncrease ? (
               <>
-                <span className="text-danger">Tu consumo se ha excedido en </span>
-                <span className="text-danger font-bold">${absDiff.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-danger">Tu consumo se ha incrementado en </span>
+                <span className="text-danger font-bold">{formattedDiff}</span>
               </>
             ) : (
               <>
                 <span className="text-success">Tu consumo se ha reducido en </span>
-                <span className="text-success font-bold">${absDiff.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-success font-bold">{formattedDiff}</span>
               </>
             )}
           </span>
@@ -257,16 +274,21 @@ export function BillingComparison({ sedeId }: BillingComparisonProps) {
   const currentMonthValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
   const prevMonthValue = `${today.getFullYear()}-${String(today.getMonth()).padStart(2, '0')}`
 
-  const { data: leftData } = useBillingData(sedeId, prevMonthValue)
-  const { data: rightData } = useBillingData(sedeId, currentMonthValue)
+  const [leftMonthValue, setLeftMonthValue] = useState<string>(prevMonthValue)
+  const [rightMonthValue, setRightMonthValue] = useState<string>(currentMonthValue)
+
+  const { data: leftData, isLoading: isLoadingLeft } = useBillingData(sedeId, leftMonthValue)
+  const { data: rightData, isLoading: isLoadingRight } = useBillingData(sedeId, rightMonthValue)
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-stretch">
         <BillingCard
           title="PERIODO ANTERIOR"
-          sedeId={sedeId}
-          defaultMonthValue={prevMonthValue}
+          monthValue={leftMonthValue}
+          onMonthChange={setLeftMonthValue}
+          data={leftData}
+          isLoading={isLoadingLeft}
         />
 
         <div className="flex items-center justify-center py-4 lg:py-0">
@@ -275,12 +297,18 @@ export function BillingComparison({ sedeId }: BillingComparisonProps) {
 
         <BillingCard
           title="PERIODO ACTUAL"
-          sedeId={sedeId}
-          defaultMonthValue={currentMonthValue}
+          monthValue={rightMonthValue}
+          onMonthChange={setRightMonthValue}
+          data={rightData}
+          isLoading={isLoadingRight}
         />
       </div>
 
-      <DifferenceAlert leftCost={leftData?.cost.total} rightCost={rightData?.cost.total} />
+      <DifferenceAlert
+        leftCost={leftData?.cost.total}
+        rightCost={rightData?.cost.total}
+        isLoading={isLoadingLeft || isLoadingRight}
+      />
     </div>
   )
 }
