@@ -27,8 +27,9 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 
 const FALLBACK_INDICATORS = ['P', 'Q']
 
-const LAST_BY_OPTIONS = ['minute', 'hour', 'day', 'week', 'month'] as const
-export type LastBy = (typeof LAST_BY_OPTIONS)[number]
+const ALL_LAST_BY_OPTIONS = ['minute', 'hour', 'day', 'week', 'month'] as const
+const ENERGY_LAST_BY_OPTIONS = ['hour', 'day', 'week', 'month'] as const
+export type LastBy = (typeof ALL_LAST_BY_OPTIONS)[number]
 
 const LAST_BY_LABELS: Record<LastBy, string> = {
   minute: 'Minuto',
@@ -105,7 +106,7 @@ export function ReadingsGraph({
   const indicatorOptions =
     availableIndicators.length > 0 ? availableIndicators : FALLBACK_INDICATORS
 
-  const [lastBy, setLastBy] = useState<LastBy>('minute')
+  const [lastBy, setLastBy] = useState<LastBy>(category === 'energy' ? 'hour' : 'minute')
   const [chartType, setChartType] = useState<'line' | 'bar'>('line')
 
   const dateAfterStr = formatDateISO(dateAfter) ?? ''
@@ -142,6 +143,8 @@ export function ReadingsGraph({
       !!activeIndicator,
   })
 
+  const isEnergyCategory = category === 'energy'
+
   const chartData = useMemo(() => {
     const results = data ?? []
     return {
@@ -149,7 +152,7 @@ export function ReadingsGraph({
       datasets: [
         {
           label: activeIndicator,
-          data: results.map((r) => r.first_value),
+          data: results.map((r) => (isEnergyCategory ? r.difference : r.first_value)),
           borderColor: '#00B7CA',
           backgroundColor: chartType === 'bar' ? 'rgba(0, 183, 202, 0.6)' : 'rgba(0, 183, 202, 0.1)',
           borderWidth: chartType === 'bar' ? 0 : 2,
@@ -167,12 +170,14 @@ export function ReadingsGraph({
         },
       ],
     }
-  }, [data, activeIndicator, lastBy, chartType])
+  }, [data, activeIndicator, lastBy, chartType, isEnergyCategory])
 
   const unit = data?.[0]?.unit ?? ''
   const activeParam = getElectricParameter(activeIndicator)
   const yAxisLabel = activeParam
-    ? `${activeParam.parameter} (${activeParam.unit})`
+    ? isEnergyCategory
+      ? `Consumo de ${activeParam.parameter} (${activeParam.unit})`
+      : `${activeParam.parameter} (${activeParam.unit})`
     : activeIndicator
 
   const options: ChartOptions<'line'> = useMemo(
@@ -253,7 +258,9 @@ export function ReadingsGraph({
     }
   })
 
-  const lastByOptions = LAST_BY_OPTIONS.map((lb) => ({
+  const availableLastByOptions = isEnergyCategory ? ENERGY_LAST_BY_OPTIONS : ALL_LAST_BY_OPTIONS
+
+  const lastByOptions = availableLastByOptions.map((lb) => ({
     value: lb,
     label: LAST_BY_LABELS[lb],
   }))

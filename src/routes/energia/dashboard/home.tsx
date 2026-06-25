@@ -112,6 +112,7 @@ function HomeDashboardPage() {
               indicatorLabel={indicatorLabel}
             />
             <ReadingsGraph
+              key={category}
               headquarterId={sedeId}
               panelId={panelId}
               measurementPointId={puntoId}
