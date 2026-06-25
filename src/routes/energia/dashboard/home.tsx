@@ -101,17 +101,9 @@ function HomeDashboardPage() {
         </div>
 
         {isReady && sedeId && panelId && puntoId && dateAfter && dateBefore && category ? (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ReadingsTable
-              data={readingsData}
-              isLoading={isLoadingReadings}
-              dateAfter={dateAfter}
-              dateBefore={dateBefore}
-              page={page}
-              onPageChange={setPage}
-              indicatorLabel={indicatorLabel}
-            />
+          <div className="space-y-6">
             <ReadingsGraph
+              key={category}
               headquarterId={sedeId}
               panelId={panelId}
               measurementPointId={puntoId}
@@ -121,6 +113,15 @@ function HomeDashboardPage() {
               availableIndicators={indicatorKeys}
               activeIndicator={resolvedIndicator}
               onIndicatorChange={setActiveIndicator}
+            />
+            <ReadingsTable
+              data={readingsData}
+              isLoading={isLoadingReadings}
+              dateAfter={dateAfter}
+              dateBefore={dateBefore}
+              page={page}
+              onPageChange={setPage}
+              indicatorLabel={indicatorLabel}
             />
           </div>
         ) : (
