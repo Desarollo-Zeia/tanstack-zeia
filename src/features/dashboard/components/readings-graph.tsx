@@ -266,7 +266,7 @@ export function ReadingsGraph({
   }))
 
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="flex flex-col h-full min-h-[420px]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
