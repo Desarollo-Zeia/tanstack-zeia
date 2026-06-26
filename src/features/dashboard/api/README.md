@@ -446,3 +446,30 @@ interface RateConsumptionCycleResponse {
   date_last_value: string | null
 }
 ```
+
+---
+
+## 13. Tariff PDFs (Facturas)
+
+```
+GET /headquarter/{headquarter_id}/tariff-pdfs/
+```
+
+Returns the list of available billing PDFs for a headquarter.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Response:** `TariffPdfsResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface TariffPdf {
+  id: number
+  title: string
+  pdf_url: string
+}
+
+interface TariffPdfsResponse {
+  data: TariffPdf[]
+}
+```

@@ -353,6 +353,17 @@ export interface RateConsumptionDetailTariffResponse {
   unit_power: string
 }
 
+// Tariff PDFs
+export interface TariffPdf {
+  id: number
+  title: string
+  pdf_url: string
+}
+
+export interface TariffPdfsResponse {
+  data: TariffPdf[]
+}
+
 // COES Peak Demand Range
 export interface PeakDemandRangeResponse {
   date: string

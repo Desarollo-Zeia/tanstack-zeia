@@ -1,7 +1,11 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText } from 'lucide-react'
+import { FileText, Receipt } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { fetchRateConsumptionCycle } from '../api/rate-consumption-cycle'
+import { fetchTariffPdfs } from '../api/tariff-pdfs'
+import { TariffPdfViewer } from './tariff-pdf-viewer'
 
 interface BillingCycleTableProps {
   sedeId: number
@@ -28,11 +32,21 @@ function formatCycleDate(dateStr: string): string {
 }
 
 export function BillingCycleTable({ sedeId }: BillingCycleTableProps) {
+  const [isViewerOpen, setIsViewerOpen] = useState(false)
+
   const { data, isLoading } = useQuery({
     queryKey: ['rate-consumption-cycle', sedeId],
     queryFn: () => fetchRateConsumptionCycle(sedeId),
     enabled: !!sedeId,
   })
+
+  const { data: tariffPdfsData } = useQuery({
+    queryKey: ['tariff-pdfs', sedeId],
+    queryFn: () => fetchTariffPdfs(sedeId),
+    enabled: !!sedeId,
+  })
+
+  const hasInvoices = (tariffPdfsData?.data ?? []).length > 0
 
   if (isLoading) {
     return (
@@ -69,10 +83,23 @@ export function BillingCycleTable({ sedeId }: BillingCycleTableProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <FileText className="w-4 h-4 text-primary" />
-          Ciclo de Facturación
-        </CardTitle>
+        <div className="flex items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="w-4 h-4 text-primary" />
+            Ciclo de Facturación
+          </CardTitle>
+          {hasInvoices && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsViewerOpen(true)}
+              className="gap-2"
+            >
+              <Receipt className="w-4 h-4" />
+              Ver facturas
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -104,6 +131,12 @@ export function BillingCycleTable({ sedeId }: BillingCycleTableProps) {
           </table>
         </div>
       </CardContent>
+
+      <TariffPdfViewer
+        sedeId={sedeId}
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+      />
     </Card>
   )
 }
