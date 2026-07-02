@@ -246,7 +246,7 @@ export function EstadisticasChart({ roomId, indicator, unit, dateAfter, dateBefo
             unit={unit}
             dateAfter={dateAfter}
             dateBefore={dateBefore}
-            interval={interval}
+            interval={null}
           />
         ) : (
           <>

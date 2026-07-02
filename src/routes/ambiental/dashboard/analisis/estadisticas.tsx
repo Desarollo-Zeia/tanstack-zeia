@@ -60,7 +60,7 @@ function EstadisticasPage() {
       ) : (
         <div className="card-executive p-12 flex items-center justify-center text-center min-h-[300px]">
           <p className="text-sm text-text-muted">
-            Seleccione sala, indicador, rango de fechas e intervalo para ver las estadísticas
+            Seleccione sala, indicador y rango de fechas para ver las estadísticas
           </p>
         </div>
       )}
