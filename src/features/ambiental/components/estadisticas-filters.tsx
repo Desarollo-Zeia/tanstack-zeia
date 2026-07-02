@@ -139,18 +139,20 @@ export function EstadisticasFilters() {
         />
       </div>
 
-      {/* Interval Selector */}
-      <div className="flex flex-col gap-1.5 min-w-[160px]">
-        <label className="label-executive" style={{ color: '#88939b' }}>
-          Intervalo
-        </label>
-        <ZeiaSelect
-          options={intervalOptions}
-          value={currentIntervalValue}
-          onChange={(val) => setIntervalo(val === 'null' ? null : Number(val))}
-          placeholder="Intervalo"
-        />
-      </div>
+      {/* Interval Selector - Only visible in "by-room" mode */}
+      {viewMode === 'by-room' && (
+        <div className="flex flex-col gap-1.5 min-w-[160px]">
+          <label className="label-executive" style={{ color: '#88939b' }}>
+            Intervalo
+          </label>
+          <ZeiaSelect
+            options={intervalOptions}
+            value={currentIntervalValue}
+            onChange={(val) => setIntervalo(val === 'null' ? null : Number(val))}
+            placeholder="Intervalo"
+          />
+        </div>
+      )}
     </div>
   )
 }
