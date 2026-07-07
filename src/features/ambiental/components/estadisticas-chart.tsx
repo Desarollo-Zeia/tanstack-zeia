@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { fetchIndicatorGraphs } from '../api/indicators'
 import { EstadisticasChartByDate } from './estadisticas-chart-by-date'
+import { formatDateShort, formatDateReadable } from '@/lib/date-utils'
 import type { RoomIndicatorData, ViewMode } from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
@@ -47,13 +48,18 @@ interface EstadisticasChartProps {
 
 function buildChartData(
   rooms: RoomIndicatorData[],
-  visibleRooms: Set<number>
+  visibleRooms: Set<number>,
+  useDateLabels: boolean
 ): ChartData<'line'> {
   if (rooms.length === 0) {
     return { labels: [], datasets: [] }
   }
 
-  const labels = rooms[0].readings.map((r) => r.hour)
+  // When the selected date range spans more than two days, display dates
+  // on the X-axis instead of hours.
+  const labels = useDateLabels
+    ? rooms[0].readings.map((r) => formatDateShort(r.date))
+    : rooms[0].readings.map((r) => r.hour)
 
   const roomDatasets = rooms.map((room, index) => ({
     label: room.room_name,
@@ -88,7 +94,18 @@ function getUnitLabel(unit: string): string {
   return unit.toLowerCase()
 }
 
-function getChartOptions(unit: string): ChartOptions<'line'> {
+function getDaysInRange(start: Date, end: Date): number {
+  const oneDay = 24 * 60 * 60 * 1000
+  const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+  const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  const diffTime = endMidnight.getTime() - startMidnight.getTime()
+  return Math.floor(diffTime / oneDay) + 1
+}
+
+function getChartOptions(
+  unit: string,
+  rooms: RoomIndicatorData[]
+): ChartOptions<'line'> {
   const unitLabel = getUnitLabel(unit)
 
   return {
@@ -117,6 +134,13 @@ function getChartOptions(unit: string): ChartOptions<'line'> {
         displayColors: true,
         boxPadding: 4,
         callbacks: {
+          title: (context) => {
+            const dataIndex = context[0]?.dataIndex
+            if (dataIndex === undefined || rooms.length === 0) return ''
+            const reading = rooms[0].readings[dataIndex]
+            if (!reading) return ''
+            return `${formatDateReadable(reading.date)}, ${reading.hour}`
+          },
           label: (context) => {
             const value = context.parsed.y
             return `${context.dataset.label}: ${value} ${unitLabel}`
@@ -181,10 +205,13 @@ export function EstadisticasChart({ roomId, indicator, unit, dateAfter, dateBefo
     }
   }, [data])
 
+  const daysInRange = getDaysInRange(dateAfter, dateBefore)
+  const useDateLabels = daysInRange > 2
+
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return { labels: [], datasets: [] }
-    return buildChartData(data, visibleRooms)
-  }, [data, visibleRooms])
+    return buildChartData(data, visibleRooms, useDateLabels)
+  }, [data, visibleRooms, useDateLabels])
 
   const toggleRoom = (roomId: number) => {
     setVisibleRooms((prev) => {
@@ -309,7 +336,7 @@ export function EstadisticasChart({ roomId, indicator, unit, dateAfter, dateBefo
                 <Line
                   key={Array.from(visibleRooms).sort().join(',')}
                   data={chartData}
-                  options={getChartOptions(unit)}
+                  options={getChartOptions(unit, data)}
                 />
               </div>
             ) : (
