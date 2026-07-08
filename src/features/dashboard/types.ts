@@ -182,8 +182,9 @@ export type ReadingsGraphResponse = ReadingGraphPoint[]
 // Power Graph
 export interface PowerChannelValue {
   measurement_point_name: string
-  power_avg: number,
-  power_peak: number
+  power_avg?: number
+  power_peak?: number
+  power?: number
 }
 
 export interface PowerGraphPoint {

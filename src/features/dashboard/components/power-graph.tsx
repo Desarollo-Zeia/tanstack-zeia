@@ -17,14 +17,15 @@ import { Activity, Clock } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ZeiaSelect } from '@/components/ui/select'
 import { fetchPowerGraph } from '@/features/dashboard/api/power-graph'
-import { formatDateISO } from '@/lib/date-utils'
+import { formatDateISO, formatDateReadable } from '@/lib/date-utils'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend)
 
-const GROUP_BY_OPTIONS = ['hour', 'day'] as const
+const GROUP_BY_OPTIONS = ['minute', 'hour', 'day'] as const
 type GroupBy = (typeof GROUP_BY_OPTIONS)[number]
 
 const GROUP_BY_LABELS: Record<GroupBy, string> = {
+  minute: 'Por Minuto',
   hour: 'Por Hora',
   day: 'Por Día',
 }
@@ -48,7 +49,7 @@ function formatTimeLabel(isoString: string, groupBy: GroupBy): string {
 }
 
 export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphProps) {
-  const [groupBy, setGroupBy] = useState<GroupBy>('hour')
+  const [groupBy, setGroupBy] = useState<GroupBy>('minute')
 
   const dateAfterStr = formatDateISO(dateAfter) ?? ''
   const dateBeforeStr = formatDateISO(dateBefore) ?? ''
@@ -77,46 +78,69 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
     const datasets: ChartData<'line'>['datasets'] = []
 
     for (const name of channelNames) {
-      const avgData = results.map((point) => {
-        const channel = point.values_per_channel.find(
-          (c) => c.measurement_point_name === name
-        )
-        return channel?.power_avg ?? null
-      })
-      const peakData = results.map((point) => {
-        const channel = point.values_per_channel.find(
-          (c) => c.measurement_point_name === name
-        )
-        return channel?.power_peak ?? null
-      })
+      if (groupBy === 'minute') {
+        const powerData = results.map((point) => {
+          const channel = point.values_per_channel.find(
+            (c) => c.measurement_point_name === name
+          )
+          return channel?.power ?? null
+        })
 
-      datasets.push({
-        label: `${name} · Potencia promedio`,
-        data: avgData,
-        borderColor: AVG_COLOR,
-        backgroundColor: AVG_COLOR + '1A',
-        borderWidth: 2,
-        borderDash: [] as number[],
-        pointRadius: 1,
-        pointHoverRadius: 5,
-        tension: 0.3,
-        fill: false,
-        spanGaps: true,
-      })
+        datasets.push({
+          label: `${name} · Potencia`,
+          data: powerData,
+          borderColor: AVG_COLOR,
+          backgroundColor: AVG_COLOR + '1A',
+          borderWidth: 2,
+          borderDash: [] as number[],
+          pointRadius: 1,
+          pointHoverRadius: 5,
+          tension: 0.3,
+          fill: false,
+          spanGaps: true,
+        })
+      } else {
+        const avgData = results.map((point) => {
+          const channel = point.values_per_channel.find(
+            (c) => c.measurement_point_name === name
+          )
+          return channel?.power_avg ?? null
+        })
+        const peakData = results.map((point) => {
+          const channel = point.values_per_channel.find(
+            (c) => c.measurement_point_name === name
+          )
+          return channel?.power_peak ?? null
+        })
 
-      datasets.push({
-        label: `${name} · Potencia máxima`,
-        data: peakData,
-        borderColor: PEAK_COLOR,
-        backgroundColor: PEAK_COLOR + '1A',
-        borderWidth: 2,
-        borderDash: [] as number[],
-        pointRadius: 1,
-        pointHoverRadius: 5,
-        tension: 0.3,
-        fill: false,
-        spanGaps: true,
-      })
+        datasets.push({
+          label: `${name} · Potencia promedio`,
+          data: avgData,
+          borderColor: AVG_COLOR,
+          backgroundColor: AVG_COLOR + '1A',
+          borderWidth: 2,
+          borderDash: [] as number[],
+          pointRadius: 1,
+          pointHoverRadius: 5,
+          tension: 0.3,
+          fill: false,
+          spanGaps: true,
+        })
+
+        datasets.push({
+          label: `${name} · Potencia máxima`,
+          data: peakData,
+          borderColor: PEAK_COLOR,
+          backgroundColor: PEAK_COLOR + '1A',
+          borderWidth: 2,
+          borderDash: [] as number[],
+          pointRadius: 1,
+          pointHoverRadius: 5,
+          tension: 0.3,
+          fill: false,
+          spanGaps: true,
+        })
+      }
     }
 
     const thresholds = data?.power_thresholds
@@ -277,18 +301,17 @@ export function PowerGraph({ headquarterId, dateAfter, dateBefore }: PowerGraphP
               const raw = results[rawIndex]
               if (!raw) return ''
               const date = new Date(raw.created_at)
+              const dateLabel = formatDateReadable(raw.created_at)
               if (groupBy === 'day') {
-                return date.toLocaleDateString('es-PE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                })
+                return dateLabel
               }
-              return date.toLocaleString('es-PE', {
+              const time = date.toLocaleTimeString('es-PE', {
                 hour: '2-digit',
                 minute: '2-digit',
-                second: '2-digit',
+                second: groupBy === 'minute' ? '2-digit' : undefined,
+                hour12: true,
               })
+              return `${dateLabel}, ${time}`
             },
             label: (context) => {
               const value = context.raw as number
