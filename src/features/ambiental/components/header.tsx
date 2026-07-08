@@ -1,5 +1,6 @@
 import { useRouter } from '@tanstack/react-router'
 import { LogOut } from 'lucide-react'
+import { resetAmbientalAnalytics } from '@/lib/analytics'
 import { useOcupacionalAuth } from '@/features/ambiental/hooks/use-ocupacional-auth'
 
 export function OcupacionalHeader() {
@@ -16,6 +17,7 @@ export function OcupacionalHeader() {
   // })
 
   const handleLogout = () => {
+    resetAmbientalAnalytics()
     logout()
     router.navigate({ to: '/ambiental/login' })
   }

@@ -1,4 +1,5 @@
 import './styles/globals.css'
+import './lib/analytics'
 
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'

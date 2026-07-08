@@ -1,6 +1,7 @@
 import { LogOut } from 'lucide-react'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { useRouter } from '@tanstack/react-router'
+import { resetEnergyAnalytics } from '@/lib/analytics'
 import { PeakPowerNotice } from './peak-power-notice'
 
 
@@ -9,6 +10,7 @@ export function DashboardHeader() {
   const router = useRouter()
 
   const handleLogout = () => {
+    resetEnergyAnalytics()
     logout()
     router.navigate({ to: '/energia/login' })
   }

@@ -3,6 +3,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Eye, EyeOff, Loader2, Activity, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { identifyEnergyUser } from '@/lib/analytics'
 import { requestToken, AuthError } from '@/features/auth/api/request-token'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 
@@ -22,6 +23,7 @@ export function LoginPage() {
     mutationFn: requestToken,
     onSuccess: (data) => {
       setAuth(data)
+      identifyEnergyUser(data.user)
 
       const modules = data.user.energy_modules
       const hasModules = Array.isArray(modules) && modules.length > 0

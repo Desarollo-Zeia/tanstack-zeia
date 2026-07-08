@@ -15,4 +15,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  define: {
+    'import.meta.env.VITE_POSTHOG_PROJECT_TOKEN': JSON.stringify('test-project-token'),
+    'import.meta.env.VITE_POSTHOG_ENVIRONMENT': JSON.stringify('test'),
+  },
 })

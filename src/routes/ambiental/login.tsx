@@ -3,6 +3,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { identifyAmbientalUser } from '@/lib/analytics'
 import { requestOcupacionalToken, OcupacionalAuthError } from '@/features/auth/api/request-ocupacional-token'
 import { useOcupacionalAuth } from '@/features/ambiental/hooks/use-ocupacional-auth'
 import { OCUPACIONAL_DEFAULT_ROUTE } from '@/features/ambiental/modules'
@@ -23,6 +24,7 @@ export function AmbientalLoginPage() {
     mutationFn: requestOcupacionalToken,
     onSuccess: (data) => {
       setAuth(data)
+      identifyAmbientalUser(data)
       router.navigate({ to: OCUPACIONAL_DEFAULT_ROUTE })
     },
     onError: (err: Error) => {
