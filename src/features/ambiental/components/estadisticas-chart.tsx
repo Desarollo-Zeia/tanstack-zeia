@@ -290,7 +290,7 @@ export function EstadisticasChart({
                 : 'text-text-muted hover:text-text-secondary'
             )}
           >
-            Combinado
+            Comparar
           </button>
         </div>
 

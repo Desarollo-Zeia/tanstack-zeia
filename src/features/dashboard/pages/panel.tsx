@@ -10,8 +10,53 @@ import { ConsumptionDistributionList } from '@/features/dashboard/components/con
 import { MeasurementPointsTable } from '@/features/dashboard/components/measurement-points-table'
 import { PanelReadingsFilters } from '@/features/dashboard/components/panel-readings-filters'
 import { PanelReadingsChart } from '@/features/dashboard/components/panel-readings-chart'
+// Screenshot feature temporarily disabled — components kept for later retake
+// import { ScreenshotCard } from '@/features/dashboard/components/screenshot-card'
+// import { Building2, Calendar } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDateISO, formatDateReadable } from '@/lib/date-utils'
+// import type { Headquarter, ElectricalPanel } from '@/features/dashboard/types'
+
+// Screenshot filters summary — kept for later retake
+// function PanelFiltersSummary({
+//   currentHeadquarter,
+//   currentPanel,
+//   dateAfter,
+//   dateBefore,
+// }: {
+//   currentHeadquarter: Headquarter | null
+//   currentPanel: ElectricalPanel | null
+//   dateAfter: Date | null
+//   dateBefore: Date | null
+// }) {
+//   const dateRange =
+//     dateAfter && dateBefore
+//       ? `${formatDateISO(dateAfter)} — ${formatDateISO(dateBefore)}`
+//       : '—'
+//
+//   return (
+//     <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
+//       {currentHeadquarter && (
+//         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted border border-border">
+//           <Building2 className="w-3.5 h-3.5" />
+//           <span className="font-medium text-text-primary">{currentHeadquarter.name}</span>
+//         </span>
+//       )}
+//       {currentPanel && (
+//         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted border border-border">
+//           <Gauge className="w-3.5 h-3.5" />
+//           <span className="font-medium text-text-primary">{currentPanel.name}</span>
+//         </span>
+//       )}
+//       {dateAfter && dateBefore && (
+//         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted border border-border">
+//           <Calendar className="w-3.5 h-3.5" />
+//           <span className="font-medium text-text-primary">{dateRange}</span>
+//         </span>
+//       )}
+//     </div>
+//   )
+// }
 
 export function PanelPage() {
   const { sedeId, panelId, dateAfter, dateBefore, isReady } = useDashboardFilters()
