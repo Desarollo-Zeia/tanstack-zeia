@@ -198,7 +198,7 @@ export interface DateReading {
 
 export type RoomIndicatorGraphResponse = Record<string, DateReading[]>
 
-export type ViewMode = 'by-room' | 'by-date'
+export type ViewMode = 'by-room' | 'by-date' | 'combined'
 
 // Alerts
 export interface Alert {

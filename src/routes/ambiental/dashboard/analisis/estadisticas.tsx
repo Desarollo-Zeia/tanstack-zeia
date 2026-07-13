@@ -8,10 +8,16 @@ export const Route = createFileRoute('/ambiental/dashboard/analisis/estadisticas
   validateSearch: (search) => ({
     sede: typeof search.sede === 'string' ? search.sede : undefined,
     sala: typeof search.sala === 'string' ? search.sala : undefined,
+    salas: Array.isArray(search.salas)
+      ? search.salas.filter((s): s is string => typeof s === 'string')
+      : undefined,
     indicador: typeof search.indicador === 'string' ? search.indicador : undefined,
     unidad: typeof search.unidad === 'string' ? search.unidad : undefined,
     desde: typeof search.desde === 'string' ? search.desde : undefined,
     hasta: typeof search.hasta === 'string' ? search.hasta : undefined,
+    fechas: Array.isArray(search.fechas)
+      ? search.fechas.filter((f): f is string => typeof f === 'string')
+      : undefined,
     intervalo: typeof search.intervalo === 'string' ? search.intervalo : undefined,
     vista: typeof search.vista === 'string' ? search.vista : undefined,
   }),
@@ -20,6 +26,9 @@ export const Route = createFileRoute('/ambiental/dashboard/analisis/estadisticas
 function EstadisticasPage() {
   const {
     salaId,
+    salaIds,
+    rooms,
+    selectedDates,
     indicador,
     unidad,
     dateAfter,
@@ -46,9 +55,12 @@ function EstadisticasPage() {
       </div>
 
       {/* Content */}
-      {isReady && salaId && indicador && unidad && dateAfter && dateBefore ? (
+      {isReady && indicador && unidad && dateAfter && dateBefore ? (
         <EstadisticasChart
-          roomId={salaId}
+          roomId={salaId ?? salaIds[0] ?? 0}
+          roomIds={salaIds}
+          rooms={rooms}
+          selectedDates={selectedDates}
           indicator={indicador}
           unit={unidad}
           dateAfter={dateAfter}

@@ -15,8 +15,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { fetchIndicatorGraphs } from '../api/indicators'
 import { EstadisticasChartByDate } from './estadisticas-chart-by-date'
+import { EstadisticasChartCombined } from './estadisticas-chart-combined'
 import { formatDateShort, formatDateReadable } from '@/lib/date-utils'
-import type { RoomIndicatorData, ViewMode } from '../types'
+import type { Room, RoomIndicatorData, ViewMode } from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
 
@@ -37,6 +38,9 @@ const ROOM_COLORS = [
 
 interface EstadisticasChartProps {
   roomId: number
+  roomIds: number[]
+  rooms: Room[]
+  selectedDates: string[]
   indicator: string
   unit: string
   dateAfter: Date
@@ -178,7 +182,19 @@ function getChartOptions(
   }
 }
 
-export function EstadisticasChart({ roomId, indicator, unit, dateAfter, dateBefore, interval, viewMode, onViewModeChange }: EstadisticasChartProps) {
+export function EstadisticasChart({
+  roomId,
+  roomIds,
+  rooms,
+  selectedDates,
+  indicator,
+  unit,
+  dateAfter,
+  dateBefore,
+  interval,
+  viewMode,
+  onViewModeChange,
+}: EstadisticasChartProps) {
   const dateAfterStr = dateAfter.toISOString().split('T')[0]
   const dateBeforeStr = dateBefore.toISOString().split('T')[0]
 
@@ -264,9 +280,32 @@ export function EstadisticasChart({ roomId, indicator, unit, dateAfter, dateBefo
           >
             Por Fecha
           </button>
+          <button
+            type="button"
+            onClick={() => onViewModeChange('combined')}
+            className={cn(
+              'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              viewMode === 'combined'
+                ? 'bg-white text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-secondary'
+            )}
+          >
+            Combinado
+          </button>
         </div>
 
-        {viewMode === 'by-date' ? (
+        {viewMode === 'combined' ? (
+          <EstadisticasChartCombined
+            roomIds={roomIds}
+            rooms={rooms}
+            selectedDates={selectedDates}
+            indicator={indicator}
+            unit={unit}
+            dateAfter={dateAfter}
+            dateBefore={dateBefore}
+            interval={interval}
+          />
+        ) : viewMode === 'by-date' ? (
           <EstadisticasChartByDate
             roomId={roomId}
             indicator={indicator}
