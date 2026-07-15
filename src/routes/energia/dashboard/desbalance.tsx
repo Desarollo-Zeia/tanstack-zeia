@@ -7,6 +7,7 @@ import { UnbalancedCountersGraph, type UnbalancedType } from '@/features/dashboa
 import { TopUnbalancedCards } from '@/features/dashboard/components/top-unbalanced-cards'
 import { ImbalancedEventsTable } from '@/features/dashboard/components/imbalanced-events-table'
 import { useDesbalanceFilters } from '@/features/dashboard/hooks/use-desbalance-filters'
+import { ScreenshotCard } from '@/features/dashboard/components/screenshot-card'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/energia/dashboard/desbalance')({
@@ -50,65 +51,56 @@ function DesbalancePage() {
               </div>
 
               <div className="space-y-4 min-w-0">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="inline-flex rounded-lg border border-border bg-card p-1">
-                    <button
-                      type="button"
-                      onClick={() => setActiveType('current')}
-                      className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
-                        activeType === 'current'
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'text-text-secondary hover:text-text-primary'
-                      )}
-                    >
-                      <Zap className="w-4 h-4" />
-                      Corriente
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveType('voltage')}
-                      className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
-                        activeType === 'voltage'
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'text-text-secondary hover:text-text-primary'
-                      )}
-                    >
-                      <Activity className="w-4 h-4" />
-                      Voltaje
-                    </button>
+                <ScreenshotCard
+                  title="Desbalance de Carga"
+                  filename="desbalance-carga"
+                  variant="browser"
+                  url="administrador.zeia.com.pe/energia/dashboard/desbalance"
+                  filters={<DesbalanceFilters />}
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="inline-flex rounded-lg border border-border bg-card p-1">
+                        <button
+                          type="button"
+                          onClick={() => setActiveType('current')}
+                          className={cn(
+                            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                            activeType === 'current'
+                              ? 'bg-primary text-white shadow-sm'
+                              : 'text-text-secondary hover:text-text-primary'
+                          )}
+                        >
+                          <Zap className="w-4 h-4" />
+                          Corriente
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveType('voltage')}
+                          className={cn(
+                            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                            activeType === 'voltage'
+                              ? 'bg-primary text-white shadow-sm'
+                              : 'text-text-secondary hover:text-text-primary'
+                          )}
+                        >
+                          <Activity className="w-4 h-4" />
+                          Voltaje
+                        </button>
+                      </div>
+                    </div>
+
+                    <UnbalancedCountersGraph
+                      key={activeType}
+                      headquarterId={sedeId}
+                      panelId={panelId}
+                      measurementPointId={puntoId}
+                      dateAfter={dateAfter}
+                      dateBefore={dateBefore}
+                      type={activeType}
+                    />
                   </div>
-
-                  {/* <button
-                    onClick={() =>
-                      router.navigate({
-                        to: '/energia/dashboard/desbalance/alertas',
-                        search: (prev) => ({
-                          sede: prev.sede,
-                          panel: prev.panel,
-                          punto: prev.punto,
-                          desde: prev.desde,
-                          hasta: prev.hasta,
-                        }),
-                      })
-                    }
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-primary/90"
-                  >
-                    <Bell className="w-4 h-4" />
-                    Ver alertas
-                  </button> */}
-                </div>
-
-                <UnbalancedCountersGraph
-                  key={activeType}
-                  headquarterId={sedeId}
-                  panelId={panelId}
-                  measurementPointId={puntoId}
-                  dateAfter={dateAfter}
-                  dateBefore={dateBefore}
-                  type={activeType}
-                />
+                </ScreenshotCard>
               </div>
             </div>
 

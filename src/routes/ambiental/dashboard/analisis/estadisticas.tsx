@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { EstadisticasFilters } from '@/features/ambiental/components/estadisticas-filters'
 import { EstadisticasChart } from '@/features/ambiental/components/estadisticas-chart'
 import { useEstadisticasFilters } from '@/features/ambiental/hooks/use-estadisticas-filters'
+import { ScreenshotCard } from '@/features/dashboard/components/screenshot-card'
 
 export const Route = createFileRoute('/ambiental/dashboard/analisis/estadisticas')({
   component: EstadisticasPage,
@@ -56,19 +57,27 @@ function EstadisticasPage() {
 
       {/* Content */}
       {isReady && indicador && unidad && dateAfter && dateBefore ? (
-        <EstadisticasChart
-          roomId={salaId ?? salaIds[0] ?? 0}
-          roomIds={salaIds}
-          rooms={rooms}
-          selectedDates={selectedDates}
-          indicator={indicador}
-          unit={unidad}
-          dateAfter={dateAfter}
-          dateBefore={dateBefore}
-          interval={intervalo}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
+        <ScreenshotCard
+          title="Estadísticas"
+          filename="estadisticas-ambiental"
+          variant="browser"
+          url="administrador.zeia.com.pe/ambiental/dashboard/analisis/estadisticas"
+          filters={<EstadisticasFilters />}
+        >
+          <EstadisticasChart
+            roomId={salaId ?? salaIds[0] ?? 0}
+            roomIds={salaIds}
+            rooms={rooms}
+            selectedDates={selectedDates}
+            indicator={indicador}
+            unit={unidad}
+            dateAfter={dateAfter}
+            dateBefore={dateBefore}
+            interval={intervalo}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
+        </ScreenshotCard>
       ) : (
         <div className="card-executive p-12 flex items-center justify-center text-center min-h-[300px]">
           <p className="text-sm text-text-muted">

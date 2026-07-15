@@ -10,53 +10,9 @@ import { ConsumptionDistributionList } from '@/features/dashboard/components/con
 import { MeasurementPointsTable } from '@/features/dashboard/components/measurement-points-table'
 import { PanelReadingsFilters } from '@/features/dashboard/components/panel-readings-filters'
 import { PanelReadingsChart } from '@/features/dashboard/components/panel-readings-chart'
-// Screenshot feature temporarily disabled — components kept for later retake
-// import { ScreenshotCard } from '@/features/dashboard/components/screenshot-card'
-// import { Building2, Calendar } from 'lucide-react'
+import { ScreenshotCard } from '@/features/dashboard/components/screenshot-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDateISO, formatDateReadable } from '@/lib/date-utils'
-// import type { Headquarter, ElectricalPanel } from '@/features/dashboard/types'
-
-// Screenshot filters summary — kept for later retake
-// function PanelFiltersSummary({
-//   currentHeadquarter,
-//   currentPanel,
-//   dateAfter,
-//   dateBefore,
-// }: {
-//   currentHeadquarter: Headquarter | null
-//   currentPanel: ElectricalPanel | null
-//   dateAfter: Date | null
-//   dateBefore: Date | null
-// }) {
-//   const dateRange =
-//     dateAfter && dateBefore
-//       ? `${formatDateISO(dateAfter)} — ${formatDateISO(dateBefore)}`
-//       : '—'
-//
-//   return (
-//     <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
-//       {currentHeadquarter && (
-//         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted border border-border">
-//           <Building2 className="w-3.5 h-3.5" />
-//           <span className="font-medium text-text-primary">{currentHeadquarter.name}</span>
-//         </span>
-//       )}
-//       {currentPanel && (
-//         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted border border-border">
-//           <Gauge className="w-3.5 h-3.5" />
-//           <span className="font-medium text-text-primary">{currentPanel.name}</span>
-//         </span>
-//       )}
-//       {dateAfter && dateBefore && (
-//         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted border border-border">
-//           <Calendar className="w-3.5 h-3.5" />
-//           <span className="font-medium text-text-primary">{dateRange}</span>
-//         </span>
-//       )}
-//     </div>
-//   )
-// }
 
 export function PanelPage() {
   const { sedeId, panelId, dateAfter, dateBefore, isReady } = useDashboardFilters()
@@ -169,52 +125,60 @@ export function PanelPage() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {consumptionData
-                ? `Distribución de Consumo — ${consumptionData.electrical_panel_name}`
-                : 'Resumen'}
-            </CardTitle>
-            <CardDescription>
-              {consumptionData
-                ? `${formatDateReadable(consumptionData.date_range.start_date)} → ${formatDateReadable(consumptionData.date_range.end_date)}`
-                : 'Seleccione sede, panel y fechas para ver los datos'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="min-h-[300px]">
-            {isLoadingConsumption ? (
-              <div className="h-[300px] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-text-muted">Cargando datos...</p>
+        <ScreenshotCard
+          title="Distribución de Consumo"
+          filename="distribucion-consumo"
+          variant="browser"
+          url="administrador.zeia.com.pe/energia/dashboard/panel"
+          filters={<DashboardFilters />}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {consumptionData
+                  ? `Distribución de Consumo — ${consumptionData.electrical_panel_name}`
+                  : 'Resumen'}
+              </CardTitle>
+              <CardDescription>
+                {consumptionData
+                  ? `${formatDateReadable(consumptionData.date_range.start_date)} → ${formatDateReadable(consumptionData.date_range.end_date)}`
+                  : 'Seleccione sede, panel y fechas para ver los datos'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="min-h-[300px]">
+              {isLoadingConsumption ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-text-muted">Cargando datos...</p>
+                  </div>
                 </div>
-              </div>
-            ) : consumptionData ? (
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="flex items-center justify-center">
-                  <ConsumptionPieChart
-                    results={consumptionData.results}
-                    mainConsumptionKwh={consumptionData.main_consumption_kwh}
-                  />
+              ) : consumptionData ? (
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="flex items-center justify-center">
+                    <ConsumptionPieChart
+                      results={consumptionData.results}
+                      mainConsumptionKwh={consumptionData.main_consumption_kwh}
+                    />
+                  </div>
+                  <div>
+                    <ConsumptionDistributionList
+                      results={consumptionData.results}
+                      mainConsumptionKwh={consumptionData.main_consumption_kwh}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <ConsumptionDistributionList
-                    results={consumptionData.results}
-                    mainConsumptionKwh={consumptionData.main_consumption_kwh}
-                  />
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-text-muted">
+                  <div className="text-center space-y-2">
+                    <BarChart3 className="w-12 h-12 mx-auto text-text-muted/40" />
+                    <p>Seleccione los filtros para cargar los datos de consumo</p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-text-muted">
-                <div className="text-center space-y-2">
-                  <BarChart3 className="w-12 h-12 mx-auto text-text-muted/40" />
-                  <p>Seleccione los filtros para cargar los datos de consumo</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </ScreenshotCard>
 
         {sedeId && panelId && (
           <MeasurementPointsTable
@@ -223,21 +187,28 @@ export function PanelPage() {
           />
         )}
 
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <PanelReadingsFilters />
-            <PanelReadingsChart
-              headquarterId={mpSedeId ?? 0}
-              panelId={mpPanelId ?? 0}
-              measurementPointId={mpPuntoId ?? 0}
-              dateAfter={mpMonthRange.start}
-              dateBefore={mpMonthRange.end}
-              indicador={mpIndicador}
-              weekday={mpWeekday}
-              isReady={mpIsReady}
-            />
-          </CardContent>
-        </Card>
+        <ScreenshotCard
+          title="Lecturas de Panel"
+          filename="lecturas-panel"
+          variant="browser"
+          url="administrador.zeia.com.pe/energia/dashboard/panel"
+        >
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <PanelReadingsFilters />
+              <PanelReadingsChart
+                headquarterId={mpSedeId ?? 0}
+                panelId={mpPanelId ?? 0}
+                measurementPointId={mpPuntoId ?? 0}
+                dateAfter={mpMonthRange.start}
+                dateBefore={mpMonthRange.end}
+                indicador={mpIndicador}
+                weekday={mpWeekday}
+                isReady={mpIsReady}
+              />
+            </CardContent>
+          </Card>
+        </ScreenshotCard>
       </div>
     </DashboardShell>
   )

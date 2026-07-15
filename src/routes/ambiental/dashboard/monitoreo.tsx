@@ -3,6 +3,7 @@ import { OcupacionalShell } from '@/features/ambiental/components/shell'
 import { MonitoreoFilters } from '@/features/ambiental/components/monitoreo-filters'
 import { MonitoreoChart } from '@/features/ambiental/components/monitoreo-chart'
 import { useMonitoreoFilters } from '@/features/ambiental/hooks/use-monitoreo-filters'
+import { ScreenshotCard } from '@/features/dashboard/components/screenshot-card'
 
 export const Route = createFileRoute('/ambiental/dashboard/monitoreo')({
   component: MonitoreoPage,
@@ -32,7 +33,15 @@ function MonitoreoPage() {
         </div>
 
         {isReady ? (
-          <MonitoreoChart />
+          <ScreenshotCard
+            title="Monitoreo"
+            filename="monitoreo-ambiental"
+            variant="browser"
+            url="administrador.zeia.com.pe/ambiental/dashboard/monitoreo"
+            filters={<MonitoreoFilters />}
+          >
+            <MonitoreoChart />
+          </ScreenshotCard>
         ) : (
           <div className="card-executive p-12 flex items-center justify-center text-center">
             <p className="text-sm text-text-muted">Cargando filtros...</p>

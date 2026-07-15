@@ -12,6 +12,11 @@ interface ScreenshotCardProps {
   children: React.ReactNode
   className?: string
   filters?: React.ReactNode
+  variant?: 'default' | 'report' | 'browser'
+  subtitle?: string
+  rightTitle?: string
+  rightSubtitle?: string
+  url?: string
 }
 
 function getCaptureDate(): string {
@@ -40,6 +45,11 @@ export function ScreenshotCard({
   children,
   className,
   filters,
+  variant = 'default',
+  subtitle,
+  rightTitle,
+  rightSubtitle,
+  url = 'app.zeia.pe',
 }: ScreenshotCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const filtersRef = useRef<HTMLDivElement>(null)
@@ -69,6 +79,37 @@ export function ScreenshotCard({
       const originalCard = cardRef.current
       clone = originalCard.cloneNode(true) as HTMLElement
 
+      // Place logo in the top-right corner of the card, aligned with the title
+      if (variant === 'browser') {
+        clone.style.position = 'relative'
+        const logoWatermark = document.createElement('div')
+        logoWatermark.className = 'absolute top-6 right-6 z-10'
+        logoWatermark.innerHTML = `
+          <img
+            src="${logoUrl}"
+            alt="ZEIA"
+            class="h-6 w-auto object-contain opacity-70"
+          />
+        `
+        clone.appendChild(logoWatermark)
+      }
+
+      // Replace <canvas> elements with rendered images so they survive cloning
+      const originalCanvases = Array.from(originalCard.querySelectorAll('canvas'))
+      const clonedCanvases = Array.from(clone.querySelectorAll('canvas'))
+      originalCanvases.forEach((canvas, index) => {
+        const clonedCanvas = clonedCanvases[index]
+        if (!clonedCanvas) return
+        try {
+          const img = document.createElement('img')
+          img.src = canvas.toDataURL('image/png')
+          img.style.cssText = canvas.style.cssText
+          clonedCanvas.parentNode?.replaceChild(img, clonedCanvas)
+        } catch {
+          // Keep the cloned canvas if conversion fails
+        }
+      })
+
       const innerCapture = captureContainer.querySelector('[data-screenshot-inner]') as HTMLElement | null
       const contentWrapper = captureContainer.querySelector('[data-screenshot-content]')
       if (!innerCapture || !contentWrapper) return
@@ -84,37 +125,81 @@ export function ScreenshotCard({
         'bg-white rounded-2xl shadow-xl border border-[#E8E8E3] overflow-hidden'
       reportCard.style.width = '100%'
 
-      const header = document.createElement('div')
-      header.className =
-        'px-6 py-4 border-b border-[#E8E8E3] bg-[#FAFAF5] flex items-center justify-between'
-      header.innerHTML = `
-        <img
-          src="${logoUrl}"
-          alt="ZEIA"
-          class="h-8 w-auto object-contain"
-        />
-        <div class="text-right">
-          <p class="text-base font-semibold text-text-primary">${title}</p>
-          <p class="text-xs text-text-secondary">${getCaptureDate()} · app.zeia.pe</p>
-        </div>
-      `
-
       const filtersClone = filtersRef.current
         ? (filtersRef.current.cloneNode(true) as HTMLElement)
         : null
       if (filtersClone) {
         filtersClone.classList.remove('hidden')
-        filtersClone.classList.add(
-          'px-6',
-          'py-4',
-          'border-b',
-          'border-[#E8E8E3]',
-          'bg-white'
-        )
+        filtersClone.classList.add('flex', 'flex-wrap', 'items-end', 'gap-3')
+      }
+
+      const header = document.createElement('div')
+
+      if (variant === 'browser') {
+        header.className = 'bg-[#F5F5F0] border-b border-[#E8E8E3] px-4 py-3'
+        header.innerHTML = `
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-3 h-3 rounded-full bg-[#FF5F57]"></div>
+            <div class="w-3 h-3 rounded-full bg-[#FFBD2E]"></div>
+            <div class="w-3 h-3 rounded-full bg-[#28C840]"></div>
+          </div>
+          <div class="bg-white border border-[#E8E8E3] rounded-lg px-4 py-2 text-sm text-text-secondary text-center truncate">
+            ${url}
+          </div>
+        `
+      } else if (variant === 'report') {
+        header.className = 'px-6 py-4 border-b border-[#E8E8E3] bg-[#FAFAF5]'
+        header.innerHTML = `
+          <div class="grid grid-cols-[100px_1fr_160px] gap-4 items-start">
+            <div class="flex items-start">
+              <img
+                src="${logoUrl}"
+                alt="ZEIA"
+                class="h-8 w-auto object-contain"
+              />
+            </div>
+            <div class="text-center">
+              <p class="text-base font-semibold text-text-primary">${title}</p>
+              ${subtitle ? `<p class="text-xs text-text-secondary mt-0.5">${subtitle}</p>` : ''}
+              ${filtersClone ? '<div class="mt-2 flex justify-center" data-report-filters></div>' : ''}
+            </div>
+            <div class="text-right">
+              <p class="text-base font-semibold text-text-primary">${rightTitle ?? ''}</p>
+              ${rightSubtitle ? `<p class="text-xs text-text-secondary mt-0.5">${rightSubtitle}</p>` : ''}
+            </div>
+          </div>
+        `
+      } else {
+        header.className = 'px-6 py-4 border-b border-[#E8E8E3] bg-[#FAFAF5] flex items-center justify-between'
+        header.innerHTML = `
+          <img
+            src="${logoUrl}"
+            alt="ZEIA"
+            class="h-8 w-auto object-contain"
+          />
+          <div class="text-right">
+            <p class="text-base font-semibold text-text-primary">${title}</p>
+            <p class="text-xs text-text-secondary">${getCaptureDate()} · app.zeia.pe</p>
+          </div>
+        `
+      }
+
+      // Insert filters clone into the report header for the report variant
+      if (variant === 'report' && filtersClone) {
+        const filtersSlot = header.querySelector('[data-report-filters]')
+        if (filtersSlot) {
+          filtersSlot.appendChild(filtersClone)
+        }
+      }
+
+      const filtersSection = document.createElement('div')
+      if ((variant === 'default' || variant === 'browser') && filtersClone) {
+        filtersSection.className = 'px-6 py-4 border-b border-[#E8E8E3] bg-white'
+        filtersSection.appendChild(filtersClone)
       }
 
       const body = document.createElement('div')
-      body.className = 'p-6'
+      body.className = variant === 'browser' ? 'p-6 bg-[#FAFAF5]' : 'p-6'
       body.appendChild(clone)
 
       const footer = document.createElement('div')
@@ -125,8 +210,8 @@ export function ScreenshotCard({
       `
 
       reportCard.appendChild(header)
-      if (filtersClone) {
-        reportCard.appendChild(filtersClone)
+      if ((variant === 'default' || variant === 'browser') && filtersClone) {
+        reportCard.appendChild(filtersSection)
       }
       reportCard.appendChild(body)
       reportCard.appendChild(footer)
@@ -154,7 +239,7 @@ export function ScreenshotCard({
       }
       setIsGenerating(false)
     }
-  }, [title, logoUrl])
+  }, [title, logoUrl, url, variant, subtitle, rightTitle, rightSubtitle])
 
   return (
     <>
