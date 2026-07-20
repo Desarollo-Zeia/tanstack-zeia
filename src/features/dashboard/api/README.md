@@ -378,6 +378,8 @@ interface RateConsumptionResponse {
 
 ## 11. Rate Consumption by Date Range (Comparador de Facturación)
 
+> **⚠️ DEPRECATED:** Reemplazado por `billing-calculate` (sección 14). La función `fetchRateConsumptionDateRange` está comentada en `rate-consumption-date-range.ts`.
+
 ```
 GET /headquarter/{headquarter_id}/electrical_panel/rate-consumption/date-range?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
 ```
@@ -471,5 +473,93 @@ interface TariffPdf {
 
 interface TariffPdfsResponse {
   data: TariffPdf[]
+}
+```
+
+---
+
+## 14. Billing Calculate (Cálculo de Facturación)
+
+```
+GET /headquarter/{headquarter_id}/billing-calculate/?start_date={YYYY-MM-DD}&end_date={YYYY-MM-DD}
+```
+
+Returns the calculated billing breakdown (itemized charges) for a headquarter within a date range.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Query params:**
+- `start_date` (string, required) — format `YYYY-MM-DD`
+- `end_date` (string, required) — format `YYYY-MM-DD`
+
+**Response:** `BillingCalculateResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface BillingCalculateEnergyDetails {
+  consumption: number
+  unit: string
+  rate: number
+  rate_unit: string
+}
+
+interface BillingCalculatePowerDetails {
+  max_power: number
+  max_power_datetime: string
+  rate: number
+  rate_unit: string
+}
+
+type BillingCalculateDetails =
+  | BillingCalculateEnergyDetails
+  | BillingCalculatePowerDetails
+
+interface BillingCalculateItem {
+  code: string
+  name: string
+  value: number
+  currency: string
+  details: BillingCalculateDetails | null
+}
+
+interface BillingCalculateResponse {
+  headquarter_id: number
+  start_date: string
+  end_date: string
+  results: BillingCalculateItem[]
+  total_amount: number
+  currency: string
+}
+```
+
+> **Note:** `details` is polymorphic — energy charges include `consumption`/`unit`, power charges include `max_power`/`max_power_datetime`, and fixed charges (e.g. `cargo_fijo_mensual`) return `details: null`.
+
+---
+
+## 15. Billing Cycles (Ciclos de Facturación)
+
+```
+GET /headquarter/{headquarter_id}/billing-cycles/
+```
+
+Returns the billing cycles available for a headquarter. The cycle with `is_current: true` is the active one and drives the Detalle Tarifario table; the full list feeds the period selectors in Billing Comparison.
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Response:** `BillingCyclesResponse` (see `src/features/dashboard/types.ts`)
+
+```typescript
+interface BillingCycleItem {
+  id: number
+  energy_headquarter: number
+  start_date: string  // format YYYY-MM-DD
+  end_date: string    // format YYYY-MM-DD
+  is_current: boolean
+}
+
+interface BillingCyclesResponse {
+  count: number
+  results: BillingCycleItem[]
 }
 ```

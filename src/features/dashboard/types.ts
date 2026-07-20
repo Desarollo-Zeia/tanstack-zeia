@@ -365,6 +365,56 @@ export interface TariffPdfsResponse {
   data: TariffPdf[]
 }
 
+// Billing Calculate (Cálculo de Facturación)
+export interface BillingCalculateEnergyDetails {
+  consumption: number
+  unit: string
+  rate: number
+  rate_unit: string
+}
+
+export interface BillingCalculatePowerDetails {
+  max_power: number
+  max_power_datetime: string
+  rate: number
+  rate_unit: string
+}
+
+export type BillingCalculateDetails =
+  | BillingCalculateEnergyDetails
+  | BillingCalculatePowerDetails
+
+export interface BillingCalculateItem {
+  code: string
+  name: string
+  value: number
+  currency: string
+  details: BillingCalculateDetails | null
+}
+
+export interface BillingCalculateResponse {
+  headquarter_id: number
+  start_date: string
+  end_date: string
+  results: BillingCalculateItem[]
+  total_amount: number
+  currency: string
+}
+
+// Billing Cycles (Ciclos de Facturación)
+export interface BillingCycleItem {
+  id: number
+  energy_headquarter: number
+  start_date: string
+  end_date: string
+  is_current: boolean
+}
+
+export interface BillingCyclesResponse {
+  count: number
+  results: BillingCycleItem[]
+}
+
 // COES Peak Demand Range
 export interface PeakDemandRangeResponse {
   date: string

@@ -507,7 +507,7 @@ Then I will reply with the list of sections registered for that module.
 | Monitoreo de Potencia | `/energia/dashboard/monitoreo` | (pending) |
 | Desbalance de Carga | `/energia/dashboard/desbalance` | Filter Bar (Sede, Panel, Punto, Fechas), Top 3 Cards (Mayor desbalance del día), Corriente/Voltaje Toggle + `UnbalancedCountersGraph`, "Ver alertas" button |
 | Alertas de Desbalance | `/energia/dashboard/desbalance/alertas` | Filter Bar (Sede, Panel, Punto, Fechas), Tabla histórica filtrada a subtipo `current_unbalance` con selector de Fase A/B/C |
-| Consumo Tarifario | `/energia/dashboard/tarifario` | Filter Bar (solo sede), Total Consumption Card, Billing Comparison (Split View), Billing Cycle Table (con botón "Ver facturas" + modal carrusel cuando hay facturas disponibles) |
+| Consumo Tarifario | `/energia/dashboard/tarifario` | Filter Bar (solo sede), ~~Total Consumption Card~~ (comentada en la ruta), Billing Comparison (Split View: Costo total + Distribución de cargos + lista de cargos; selectores de período alimentados por `billing-cycles`, datos por ciclo vía `billing-calculate`), ~~Billing Cycle Table~~ (comentada en la ruta), Billing Detail Table (ciclo `is_current` de `billing-cycles` + `billing-calculate`) |
 | Comparación por Día | `/energia/dashboard/comparador` | (pending) |
 | Alertas | `/energia/dashboard/alertas` | Filter Bar, Summary Card (panel name + today_count), Alerts Table (indicador, sub indicador, origen, fecha, hora, límite, valor) |
 

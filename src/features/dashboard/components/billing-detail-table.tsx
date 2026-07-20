@@ -1,18 +1,54 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Receipt } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { fetchRateConsumptionDetailTariff } from '../api/rate-consumption-detail-tariff'
+import { fetchBillingCalculate } from '../api/billing-calculate'
+import { useBillingCycles } from '../hooks/use-billing-cycles'
+import {
+  CURRENCY_SYMBOLS,
+  formatCycleRange,
+  formatRate,
+  getChargeDetailLine,
+} from '../lib/billing-format'
 
 interface BillingDetailTableProps {
   sedeId: number
 }
 
+function formatImporte(value: number, currency: string): string {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency
+  return `${symbol} ${value.toLocaleString('es-PE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
+
 export function BillingDetailTable({ sedeId }: BillingDetailTableProps) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['rate-consumption-detail-tariff', sedeId],
-    queryFn: () => fetchRateConsumptionDetailTariff(sedeId),
-    enabled: !!sedeId,
+  const { data: cyclesData, isLoading: isLoadingCycles } = useBillingCycles(sedeId)
+
+  const currentCycle = useMemo(() => {
+    const results = cyclesData?.results ?? []
+    if (results.length === 0) return null
+    return results.find((cycle) => cycle.is_current) ?? results[0]
+  }, [cyclesData])
+
+  const { data, isLoading: isLoadingDetail } = useQuery({
+    queryKey: [
+      'billing-calculate',
+      sedeId,
+      currentCycle?.start_date ?? null,
+      currentCycle?.end_date ?? null,
+    ],
+    queryFn: () => {
+      if (!currentCycle) {
+        throw new Error('Missing billing cycle')
+      }
+      return fetchBillingCalculate(sedeId, currentCycle.start_date, currentCycle.end_date)
+    },
+    enabled: !!currentCycle,
   })
+
+  const isLoading = isLoadingCycles || (currentCycle !== null && isLoadingDetail)
 
   if (isLoading) {
     return (
@@ -31,12 +67,22 @@ export function BillingDetailTable({ sedeId }: BillingDetailTableProps) {
     )
   }
 
-  if (!data) {
-    return null
-  }
-
-  const formatValue = (value: number) => {
-    return value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  if (!currentCycle || !data) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Receipt className="w-4 h-4 text-primary" />
+            Detalle Tarifario
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-24 items-center justify-center text-sm text-text-muted">
+            No hay un ciclo de facturación activo para esta sede
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -53,7 +99,7 @@ export function BillingDetailTable({ sedeId }: BillingDetailTableProps) {
             <thead>
               <tr className="bg-primary text-white">
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap rounded-tl-lg">
-                  {data.billing_data.billing_data_type}
+                  {formatCycleRange(currentCycle.start_date, currentCycle.end_date)}
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
                   Tarifa
@@ -67,22 +113,22 @@ export function BillingDetailTable({ sedeId }: BillingDetailTableProps) {
               </tr>
             </thead>
             <tbody>
-              {data.charges.map((charge, index) => (
+              {data.results.map((item) => (
                 <tr
-                  key={index}
+                  key={item.code}
                   className="border-b border-border/50 hover:bg-secondary/30 transition-colors"
                 >
                   <td className="px-4 py-3 text-text-primary whitespace-nowrap">
-                    {charge.description}
+                    {item.name}
                   </td>
                   <td className="px-4 py-3 text-right text-text-secondary whitespace-nowrap">
-                    {formatValue(charge.cargo.value)} {charge.cargo.unit}
+                    {formatRate(item.details) ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-right text-text-secondary whitespace-nowrap">
-                    {formatValue(charge.consumption.value)} {charge.consumption.unit}
+                    {getChargeDetailLine(item) ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-right text-text-secondary whitespace-nowrap">
-                    {charge.billed.unit} {formatValue(charge.billed.value)}
+                    {formatImporte(item.value, item.currency)}
                   </td>
                 </tr>
               ))}
@@ -96,7 +142,7 @@ export function BillingDetailTable({ sedeId }: BillingDetailTableProps) {
                   Costo total
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-bold text-danger rounded-br-lg">
-                  {data.unit_cost} {formatValue(data.total)}
+                  {formatImporte(data.total_amount, data.currency)}
                 </td>
               </tr>
             </tfoot>
