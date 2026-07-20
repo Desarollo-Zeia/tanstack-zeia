@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BillingComparison } from './billing-comparison'
 import * as billingCalculateApi from '../api/billing-calculate'
@@ -200,6 +201,62 @@ describe('BillingComparison', () => {
     })
 
     expect(screen.getByText(/Su consumo ha aumentado un/)).toBeInTheDocument()
+  })
+
+  it('assigns a distinct color to each energy charge icon', async () => {
+    mockBillingCycles()
+    mockBillingCalculate()
+
+    renderWithProviders(<BillingComparison sedeId={67} />)
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText('Cargo por energía activa en horas fuera de punta').length
+      ).toBeGreaterThan(0)
+    })
+
+    const fueraPuntaRow = screen
+      .getAllByText('Cargo por energía activa en horas fuera de punta')[0]
+      .closest('li')!
+    const puntaRow = screen
+      .getAllByText('Cargo por energía activa en horas punta')[0]
+      .closest('li')!
+
+    expect(fueraPuntaRow.querySelector('span')!.className).toContain('bg-primary')
+    expect(puntaRow.querySelector('span')!.className).toContain('bg-foreground')
+    expect(puntaRow.querySelector('span')!.className).not.toContain('bg-primary')
+  })
+
+  it('highlights the matching charge row and dims other bar segments on hover', async () => {
+    mockBillingCycles()
+    mockBillingCalculate()
+    const user = userEvent.setup()
+
+    renderWithProviders(<BillingComparison sedeId={67} />)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Cargo fijo mensual')).toHaveLength(2)
+    })
+
+    const row = screen
+      .getAllByText('Cargo por energía activa en horas fuera de punta')[0]
+      .closest('li')!
+
+    await user.hover(row)
+
+    // La fila se marca
+    expect(row.className).toContain('bg-primary/10')
+
+    // Los segmentos de otros cargos se atenuan; el de la fila no
+    const hoveredSegment = screen.getAllByText('60%')[0].parentElement!
+    const otherSegment = screen.getAllByText('40%')[0].parentElement!
+    expect(hoveredSegment.className).not.toContain('opacity-30')
+    expect(otherSegment.className).toContain('opacity-30')
+
+    await user.unhover(row)
+
+    expect(row.className).not.toContain('bg-primary/10')
+    expect(otherSegment.className).not.toContain('opacity-30')
   })
 
   it('calls billing-calculate with the cycle date ranges', async () => {

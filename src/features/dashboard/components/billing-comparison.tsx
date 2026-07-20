@@ -36,7 +36,7 @@ interface ChargeStyle {
 
 const CHARGE_STYLES: Record<string, ChargeStyle> = {
   cargo_fijo_mensual: { bar: 'bg-text-muted', iconBg: 'bg-text-muted', Icon: Receipt },
-  energia_activa_horas_punta: { bar: 'bg-text-primary', iconBg: 'bg-text-primary', Icon: Zap },
+  energia_activa_horas_punta: { bar: 'bg-foreground', iconBg: 'bg-foreground', Icon: Zap },
   energia_activa_horas_fuera_punta: { bar: 'bg-primary', iconBg: 'bg-primary', Icon: Zap },
   potencia_activa_generacion_punta: {
     bar: 'bg-text-secondary',
@@ -45,14 +45,13 @@ const CHARGE_STYLES: Record<string, ChargeStyle> = {
   },
 }
 
+// Colores extra para codigos de cargo no mapeados (evitan repetir colores en la misma tarjeta)
+const EXTRA_COLORS = ['bg-warning', 'bg-success', 'bg-danger', 'bg-text-muted', 'bg-primary-hover']
+
 const FALLBACK_CHARGE_STYLE: ChargeStyle = {
   bar: 'bg-border',
   iconBg: 'bg-border',
   Icon: FileText,
-}
-
-function getChargeStyle(code: string): ChargeStyle {
-  return CHARGE_STYLES[code] ?? FALLBACK_CHARGE_STYLE
 }
 
 function getEnergyConsumption(data: BillingCalculateResponse | undefined): number {
@@ -120,18 +119,47 @@ function BillingCard({
   data,
   isLoading,
 }: BillingCardProps) {
+  const [hoveredCode, setHoveredCode] = useState<string | null>(null)
+
   const selectOptions = cycles.map((cycle) => ({
     value: String(cycle.id),
     label: getCycleLabel(cycle),
   }))
+
+  // Asigna un color unico por cargo: color fijo si el codigo es conocido,
+  // color extra (no repetido en la tarjeta) para codigos desconocidos
+  const itemStyles = useMemo(() => {
+    const map = new Map<string, ChargeStyle>()
+    if (!data) return map
+    const usedColors = new Set(
+      data.results
+        .map((item) => CHARGE_STYLES[item.code]?.bar)
+        .filter((color): color is string => Boolean(color))
+    )
+    const extraPool = EXTRA_COLORS.filter((color) => !usedColors.has(color))
+    let extraIndex = 0
+    for (const item of data.results) {
+      const known = CHARGE_STYLES[item.code]
+      if (known) {
+        map.set(item.code, known)
+        continue
+      }
+      const pool = extraPool.length > 0 ? extraPool : EXTRA_COLORS
+      const color = pool[extraIndex % pool.length]
+      extraIndex++
+      map.set(item.code, { bar: color, iconBg: color, Icon: FileText })
+    }
+    return map
+  }, [data])
 
   const segments = useMemo(() => {
     if (!data || data.total_amount <= 0) return []
     return data.results.map((item) => ({
       code: item.code,
       pct: (item.value / data.total_amount) * 100,
+      color: itemStyles.get(item.code)?.bar ?? FALLBACK_CHARGE_STYLE.bar,
     }))
-  }, [data])
+  }, [data, itemStyles])
 
   return (
     <Card>
@@ -184,9 +212,15 @@ function BillingCard({
                 {segments.map((segment) => (
                   <div
                     key={segment.code}
+                    onMouseEnter={() => setHoveredCode(segment.code)}
+                    onMouseLeave={() => setHoveredCode(null)}
                     className={cn(
-                      'flex h-full items-center justify-center',
-                      getChargeStyle(segment.code).bar
+                      'flex h-full cursor-pointer items-center justify-center transition-all duration-300',
+                      segment.color,
+                      hoveredCode !== null &&
+                        hoveredCode !== segment.code &&
+                        'opacity-30',
+                      hoveredCode === segment.code && 'brightness-110 saturate-150'
                     )}
                     style={{ width: `${segment.pct}%` }}
                   >
@@ -203,25 +237,45 @@ function BillingCard({
             {/* Lista de cargos */}
             <ul className="space-y-3">
               {data.results.map((item) => {
-                const style = getChargeStyle(item.code)
+                const style = itemStyles.get(item.code) ?? FALLBACK_CHARGE_STYLE
                 const detailLine = getChargeDetailLine(item)
+                const isHovered = hoveredCode === item.code
                 return (
-                  <li key={item.code} className="flex items-center gap-3">
+                  <li
+                    key={item.code}
+                    onMouseEnter={() => setHoveredCode(item.code)}
+                    onMouseLeave={() => setHoveredCode(null)}
+                    className={cn(
+                      '-mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 transition-all duration-300',
+                      isHovered && 'scale-[1.02] bg-primary/10 shadow-soft'
+                    )}
+                  >
                     <span
                       className={cn(
-                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white',
-                        style.iconBg
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition-transform duration-300',
+                        style.iconBg,
+                        isHovered && 'scale-110'
                       )}
                     >
                       <style.Icon className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-text-primary">
+                      <p
+                        className={cn(
+                          'truncate text-sm font-medium transition-colors duration-300',
+                          isHovered ? 'text-primary-hover' : 'text-text-primary'
+                        )}
+                      >
                         {item.name}
                       </p>
                       {detailLine && <p className="text-xs text-text-muted">{detailLine}</p>}
                     </div>
-                    <span className="font-mono text-sm font-semibold text-text-primary">
+                    <span
+                      className={cn(
+                        'font-mono text-sm font-semibold transition-colors duration-300',
+                        isHovered ? 'text-primary-hover' : 'text-text-primary'
+                      )}
+                    >
                       {formatMoney(item.value, item.currency)}
                     </span>
                   </li>
