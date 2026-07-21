@@ -380,9 +380,20 @@ export interface BillingCalculatePowerDetails {
   rate_unit: string
 }
 
+export interface BillingCalculateReactiveDetails {
+  consumption: number
+  active_energy_consumption: number
+  threshold_percent: number
+  excess_consumption: number
+  unit: string
+  rate: number
+  rate_unit: string
+}
+
 export type BillingCalculateDetails =
   | BillingCalculateEnergyDetails
   | BillingCalculatePowerDetails
+  | BillingCalculateReactiveDetails
 
 export interface BillingCalculateItem {
   code: string
@@ -397,8 +408,10 @@ export interface BillingCalculateResponse {
   start_date: string
   end_date: string
   results: BillingCalculateItem[]
-  total_amount: number
-  currency: string
+  // Populados solo si todos los cargos son de una única moneda; null si son mixtas
+  total_amount: number | null
+  currency: string | null
+  totals_by_currency: Record<string, number>
 }
 
 // Billing Cycles (Ciclos de Facturación)
