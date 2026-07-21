@@ -89,6 +89,7 @@ function buildResponse(overrides: {
     ],
     total_amount: overrides.total,
     currency: 'USD',
+    totals_by_currency: { USD: overrides.total },
   }
 }
 
@@ -109,6 +110,88 @@ const rightResponse = buildResponse({
   consumptionPunta: 40,
   consumptionFueraPunta: 60,
 })
+
+// Ciclo anterior (Junio) multi-moneda: USD + energia reactiva en PEN
+const mixedLeftResponse: BillingCalculateResponse = {
+  headquarter_id: 67,
+  start_date: '2026-06-01',
+  end_date: '2026-06-30',
+  results: [
+    {
+      code: 'energia_activa_horas_fuera_punta',
+      name: 'Cargo por energía activa en horas fuera de punta',
+      value: 3915,
+      currency: 'USD',
+      details: { consumption: 100, unit: 'MWh', rate: 39.15, rate_unit: 'USD/MWh' },
+    },
+    {
+      code: 'energia_activa_horas_punta',
+      name: 'Cargo por energía activa en horas punta',
+      value: 1957.5,
+      currency: 'USD',
+      details: { consumption: 50, unit: 'MWh', rate: 39.15, rate_unit: 'USD/MWh' },
+    },
+    {
+      code: 'energia_reactiva_inductiva',
+      name: 'Cargo por energía reactiva inductiva',
+      value: 1476,
+      currency: 'PEN',
+      details: {
+        consumption: 90000,
+        active_energy_consumption: 165080.24,
+        threshold_percent: 30,
+        excess_consumption: 30000,
+        unit: 'kVArh',
+        rate: 0.0492,
+        rate_unit: 'PEN/kVArh',
+      },
+    },
+  ],
+  total_amount: null,
+  currency: null,
+  totals_by_currency: { USD: 5872.5, PEN: 1476 },
+}
+
+// Ciclo actual (Julio) multi-moneda: mas barato y menor consumo activo
+const mixedRightResponse: BillingCalculateResponse = {
+  headquarter_id: 67,
+  start_date: '2026-07-01',
+  end_date: '2026-07-31',
+  results: [
+    {
+      code: 'energia_activa_horas_fuera_punta',
+      name: 'Cargo por energía activa en horas fuera de punta',
+      value: 2349,
+      currency: 'USD',
+      details: { consumption: 60, unit: 'MWh', rate: 39.15, rate_unit: 'USD/MWh' },
+    },
+    {
+      code: 'energia_activa_horas_punta',
+      name: 'Cargo por energía activa en horas punta',
+      value: 1566,
+      currency: 'USD',
+      details: { consumption: 40, unit: 'MWh', rate: 39.15, rate_unit: 'USD/MWh' },
+    },
+    {
+      code: 'energia_reactiva_inductiva',
+      name: 'Cargo por energía reactiva inductiva',
+      value: 1072.67,
+      currency: 'PEN',
+      details: {
+        consumption: 71326.35,
+        active_energy_consumption: 165080.24,
+        threshold_percent: 30,
+        excess_consumption: 21802.28,
+        unit: 'kVArh',
+        rate: 0.0492,
+        rate_unit: 'PEN/kVArh',
+      },
+    },
+  ],
+  total_amount: null,
+  currency: null,
+  totals_by_currency: { USD: 3915, PEN: 1072.67 },
+}
 
 function mockBillingCalculate(left = leftResponse, right = rightResponse) {
   return vi
@@ -271,5 +354,34 @@ describe('BillingComparison', () => {
 
     expect(spy).toHaveBeenCalledWith(67, '2026-06-01', '2026-06-30')
     expect(spy).toHaveBeenCalledWith(67, '2026-07-01', '2026-07-31')
+  })
+
+  it('renders totals per currency and excludes reactive energy from consumption', async () => {
+    mockBillingCycles()
+    mockBillingCalculate(mixedLeftResponse, mixedRightResponse)
+
+    renderWithProviders(<BillingComparison sedeId={67} />)
+
+    // Costo total apilado por moneda en ambas cards
+    // (algunos importes coinciden con valores de las filas de cargos)
+    await waitFor(() => {
+      expect(screen.getByText('$5,872.50')).toBeInTheDocument()
+      expect(screen.getAllByText('S/1,476.00')).toHaveLength(2)
+      expect(screen.getAllByText('$3,915.00')).toHaveLength(2)
+      expect(screen.getAllByText('S/1,072.67')).toHaveLength(2)
+    })
+
+    // El banner compara cada moneda por separado
+    expect(screen.getByText(/Ahorro registrado/)).toBeInTheDocument()
+    expect(screen.getByText('$1,957.50 · S/403.33')).toBeInTheDocument()
+
+    // Energia reactiva: se muestra el exceso facturado
+    expect(screen.getByText('30000.00 kVArh')).toBeInTheDocument()
+    expect(screen.getByText('21802.28 kVArh')).toBeInTheDocument()
+
+    // El % de consumo solo considera energia activa (150 → 100 MWh = 33.3%),
+    // sin mezclar los kVArh de la energia reactiva
+    expect(screen.getByText(/Su consumo ha disminuido un/)).toBeInTheDocument()
+    expect(screen.getByText('33.3 %')).toBeInTheDocument()
   })
 })

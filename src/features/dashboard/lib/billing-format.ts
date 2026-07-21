@@ -1,4 +1,9 @@
-import type { BillingCalculateDetails, BillingCalculateItem, BillingCycleItem } from '../types'
+import type {
+  BillingCalculateDetails,
+  BillingCalculateItem,
+  BillingCalculateResponse,
+  BillingCycleItem,
+} from '../types'
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$',
@@ -13,15 +18,39 @@ export function formatMoney(value: number, currency: string): string {
   })}`
 }
 
+export interface BillingTotal {
+  currency: string
+  amount: number
+}
+
+/**
+ * Totales de facturación por moneda. Prefiere `totals_by_currency`;
+ * hace fallback a `total_amount`/`currency` (respuesta de una única moneda).
+ */
+export function getBillingTotals(data: BillingCalculateResponse): BillingTotal[] {
+  const entries = Object.entries(data.totals_by_currency ?? {})
+  if (entries.length > 0) {
+    return entries.map(([currency, amount]) => ({ currency, amount }))
+  }
+  if (data.total_amount != null && data.currency != null) {
+    return [{ currency: data.currency, amount: data.total_amount }]
+  }
+  return []
+}
+
 function getPowerUnit(details: BillingCalculateDetails): string {
   if (!('rate_unit' in details)) return 'kW'
   return details.rate_unit.includes('/') ? details.rate_unit.split('/')[1] : 'kW'
 }
 
-/** Linea de detalle para la lista de cargos: "145.89 MWh" / "434.01 kW" / null */
+/** Linea de detalle para la lista de cargos: "145.89 MWh" / "21802.28 kVArh" / "434.01 kW" / null */
 export function getChargeDetailLine(item: BillingCalculateItem): string | null {
   const { details } = item
   if (!details) return null
+  // Energia reactiva: se factura el exceso sobre el umbral (excess * rate = value)
+  if ('active_energy_consumption' in details) {
+    return `${details.excess_consumption.toFixed(2)} ${details.unit}`
+  }
   if ('consumption' in details) {
     return `${details.consumption.toFixed(2)} ${details.unit}`
   }

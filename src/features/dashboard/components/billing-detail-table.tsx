@@ -8,8 +8,10 @@ import {
   CURRENCY_SYMBOLS,
   formatCycleRange,
   formatRate,
+  getBillingTotals,
   getChargeDetailLine,
 } from '../lib/billing-format'
+import { cn } from '@/lib/utils'
 
 interface BillingDetailTableProps {
   sedeId: number
@@ -134,17 +136,30 @@ export function BillingDetailTable({ sedeId }: BillingDetailTableProps) {
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-danger/5">
-                <td
-                  colSpan={3}
-                  className="px-4 py-3 text-right text-sm font-semibold text-danger rounded-bl-lg"
-                >
-                  Costo total
-                </td>
-                <td className="px-4 py-3 text-right text-sm font-bold text-danger rounded-br-lg">
-                  {formatImporte(data.total_amount, data.currency)}
-                </td>
-              </tr>
+              {getBillingTotals(data).map((total, index, totals) => {
+                const isLast = index === totals.length - 1
+                return (
+                  <tr key={total.currency} className="bg-danger/5">
+                    <td
+                      colSpan={3}
+                      className={cn(
+                        'px-4 py-3 text-right text-sm font-semibold text-danger',
+                        isLast && 'rounded-bl-lg'
+                      )}
+                    >
+                      Costo total{totals.length > 1 ? ` ${total.currency}` : ''}
+                    </td>
+                    <td
+                      className={cn(
+                        'px-4 py-3 text-right text-sm font-bold text-danger',
+                        isLast && 'rounded-br-lg'
+                      )}
+                    >
+                      {formatImporte(total.amount, total.currency)}
+                    </td>
+                  </tr>
+                )
+              })}
             </tfoot>
           </table>
         </div>
