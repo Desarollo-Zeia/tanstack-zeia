@@ -60,9 +60,11 @@ const POWER_SUBTYPE_OPTIONS = [
 
 const CURRENT_SUBTYPE_OPTIONS = [
   { value: 'max_current_exceeded', label: 'Corriente Máxima Excedida' },
-  { value: 'min_current_subceeded', label: 'Corriente Mínima Subexcedida' },
-  { value: 'zero_current', label: 'Corriente Cero' },
+  { value: 'min_current_subceeded', label: 'Corriente Mínima No Alcanzada' },
+  { value: 'zero_current', label: 'Equipo apagado (Corriente Cero)' },
   { value: 'current_unbalance', label: 'Desbalance de Corriente' },
+  { value: 'current_anomaly', label: 'Anomalía de Corriente' },
+  { value: 'equipment_on', label: 'Equipo Encendido' },
 ]
 
 const HARMONIC_SUBTYPE_OPTIONS = [
