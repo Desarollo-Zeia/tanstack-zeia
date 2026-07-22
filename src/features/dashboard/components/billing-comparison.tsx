@@ -18,6 +18,7 @@ import { useBillingCycles } from '../hooks/use-billing-cycles'
 import type { BillingCalculateResponse, BillingCycleItem } from '../types'
 import {
   formatMoney,
+  getBillingTotals,
   getChargeDetailLine,
   formatCycleRange,
   getCycleLabel,
@@ -57,7 +58,12 @@ const FALLBACK_CHARGE_STYLE: ChargeStyle = {
 function getEnergyConsumption(data: BillingCalculateResponse | undefined): number {
   if (!data) return 0
   return data.results.reduce((sum, item) => {
-    if (item.details && 'consumption' in item.details) {
+    // Excluir energia reactiva (kVArh): solo se suma energia activa
+    if (
+      item.details &&
+      'consumption' in item.details &&
+      !('active_energy_consumption' in item.details)
+    ) {
       return sum + item.details.consumption
     }
     return sum
@@ -152,14 +158,26 @@ function BillingCard({
     return map
   }, [data])
 
-  const segments = useMemo(() => {
-    if (!data || data.total_amount <= 0) return []
-    return data.results.map((item) => ({
-      code: item.code,
-      pct: (item.value / data.total_amount) * 100,
-      color: itemStyles.get(item.code)?.bar ?? FALLBACK_CHARGE_STYLE.bar,
+  // Segmentos agrupados por moneda: el % de cada cargo se calcula sobre el
+  // total de su propia moneda (no se pueden mezclar monedas sin tipo de cambio)
+  const barGroups = useMemo(() => {
+    if (!data) return []
+    return getBillingTotals(data).map((total) => ({
+      ...total,
+      segments:
+        total.amount > 0
+          ? data.results
+              .filter((item) => item.currency === total.currency)
+              .map((item) => ({
+                code: item.code,
+                pct: (item.value / total.amount) * 100,
+                color: itemStyles.get(item.code)?.bar ?? FALLBACK_CHARGE_STYLE.bar,
+              }))
+          : [],
     }))
   }, [data, itemStyles])
+
+  const totals = useMemo(() => (data ? getBillingTotals(data) : []), [data])
 
   return (
     <Card>
@@ -197,9 +215,22 @@ function BillingCard({
               <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
                 Costo total
               </p>
-              <p className="mt-1 font-mono text-3xl font-bold text-primary">
-                {formatMoney(data.total_amount, data.currency)}
-              </p>
+              {totals.length <= 1 ? (
+                <p className="mt-1 font-mono text-3xl font-bold text-primary">
+                  {totals[0] ? formatMoney(totals[0].amount, totals[0].currency) : '—'}
+                </p>
+              ) : (
+                <div className="mt-1 space-y-0.5">
+                  {totals.map((total) => (
+                    <p
+                      key={total.currency}
+                      className="font-mono text-2xl font-bold text-primary"
+                    >
+                      {formatMoney(total.amount, total.currency)}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Distribución de cargos */}
@@ -208,27 +239,38 @@ function BillingCard({
                 <span className="font-medium">Distribución de cargos</span>
                 <span>% Facturado</span>
               </div>
-              <div className="flex h-4 w-full overflow-hidden rounded-full bg-muted">
-                {segments.map((segment) => (
-                  <div
-                    key={segment.code}
-                    onMouseEnter={() => setHoveredCode(segment.code)}
-                    onMouseLeave={() => setHoveredCode(null)}
-                    className={cn(
-                      'flex h-full cursor-pointer items-center justify-center transition-all duration-300',
-                      segment.color,
-                      hoveredCode !== null &&
-                        hoveredCode !== segment.code &&
-                        'opacity-30',
-                      hoveredCode === segment.code && 'brightness-110 saturate-150'
+              <div className="space-y-2">
+                {barGroups.map((group) => (
+                  <div key={group.currency}>
+                    {barGroups.length > 1 && (
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                        {group.currency}
+                      </p>
                     )}
-                    style={{ width: `${segment.pct}%` }}
-                  >
-                    {segment.pct >= 5 && (
-                      <span className="text-[10px] font-semibold text-white">
-                        {Math.round(segment.pct)}%
-                      </span>
-                    )}
+                    <div className="flex h-4 w-full overflow-hidden rounded-full bg-muted">
+                      {group.segments.map((segment) => (
+                        <div
+                          key={segment.code}
+                          onMouseEnter={() => setHoveredCode(segment.code)}
+                          onMouseLeave={() => setHoveredCode(null)}
+                          className={cn(
+                            'flex h-full cursor-pointer items-center justify-center transition-all duration-300',
+                            segment.color,
+                            hoveredCode !== null &&
+                              hoveredCode !== segment.code &&
+                              'opacity-30',
+                            hoveredCode === segment.code && 'brightness-110 saturate-150'
+                          )}
+                          style={{ width: `${segment.pct}%` }}
+                        >
+                          {segment.pct >= 5 && (
+                            <span className="text-[10px] font-semibold text-white">
+                              {Math.round(segment.pct)}%
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -330,9 +372,20 @@ function SavingsBanner({
     )
   }
 
-  const costDiff = leftData.total_amount - rightData.total_amount
-  const isSaving = costDiff >= 0
-  const formattedDiff = formatMoney(Math.abs(costDiff), rightData.currency)
+  // Diff por cada moneda presente en ambos ciclos (positivo = el ciclo actual es mas barato)
+  const leftTotals = getBillingTotals(leftData)
+  const rightTotals = getBillingTotals(rightData)
+  const diffs = rightTotals
+    .map(({ currency, amount }) => {
+      const leftTotal = leftTotals.find((total) => total.currency === currency)
+      if (!leftTotal) return null
+      return { currency, diff: leftTotal.amount - amount }
+    })
+    .filter((d): d is { currency: string; diff: number } => d !== null)
+
+  const isSaving = diffs.every((d) => d.diff >= 0)
+  const formattedDiff =
+    diffs.map((d) => formatMoney(Math.abs(d.diff), d.currency)).join(' · ') || '—'
 
   const leftConsumption = getEnergyConsumption(leftData)
   const rightConsumption = getEnergyConsumption(rightData)

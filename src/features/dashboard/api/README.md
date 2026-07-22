@@ -510,9 +510,20 @@ interface BillingCalculatePowerDetails {
   rate_unit: string
 }
 
+interface BillingCalculateReactiveDetails {
+  consumption: number
+  active_energy_consumption: number
+  threshold_percent: number
+  excess_consumption: number
+  unit: string
+  rate: number
+  rate_unit: string
+}
+
 type BillingCalculateDetails =
   | BillingCalculateEnergyDetails
   | BillingCalculatePowerDetails
+  | BillingCalculateReactiveDetails
 
 interface BillingCalculateItem {
   code: string
@@ -527,12 +538,15 @@ interface BillingCalculateResponse {
   start_date: string
   end_date: string
   results: BillingCalculateItem[]
-  total_amount: number
-  currency: string
+  total_amount: number | null
+  currency: string | null
+  totals_by_currency: Record<string, number>
 }
 ```
 
-> **Note:** `details` is polymorphic — energy charges include `consumption`/`unit`, power charges include `max_power`/`max_power_datetime`, and fixed charges (e.g. `cargo_fijo_mensual`) return `details: null`.
+> **Note:** `details` is polymorphic — energy charges include `consumption`/`unit`, power charges include `max_power`/`max_power_datetime`, reactive energy charges (e.g. `energia_reactiva_inductiva`) include `active_energy_consumption`/`threshold_percent`/`excess_consumption`, and fixed charges (e.g. `cargo_fijo_mensual`) return `details: null`.
+>
+> **Note:** `total_amount`/`currency` are only populated when all charges share a single currency; they are `null` for mixed-currency responses. `totals_by_currency` always carries the per-currency totals (e.g. `{ "USD": 9520.7, "PEN": 1072.67 }`).
 
 ---
 

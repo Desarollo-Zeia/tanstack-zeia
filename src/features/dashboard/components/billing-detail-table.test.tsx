@@ -91,6 +91,7 @@ const mockBilling: BillingCalculateResponse = {
   ],
   total_amount: 3788.54,
   currency: 'USD',
+  totals_by_currency: { USD: 3788.54 },
 }
 
 describe('BillingDetailTable', () => {
@@ -161,5 +162,64 @@ describe('BillingDetailTable', () => {
     })
 
     expect(calculateSpy).not.toHaveBeenCalled()
+  })
+
+  it('renders multi-currency totals and reactive energy details', async () => {
+    const mixedBilling: BillingCalculateResponse = {
+      headquarter_id: 67,
+      start_date: '2026-07-01',
+      end_date: '2026-07-31',
+      results: [
+        {
+          code: 'energia_activa_horas_punta',
+          name: 'Cargo por Energía Activa Punta',
+          value: 1710.48,
+          currency: 'USD',
+          details: {
+            consumption: 43.69,
+            unit: 'MWh',
+            rate: 39.15,
+            rate_unit: 'USD/MWh',
+          },
+        },
+        {
+          code: 'energia_reactiva_inductiva',
+          name: 'Cargo por energía reactiva inductiva',
+          value: 1072.67,
+          currency: 'PEN',
+          details: {
+            consumption: 71326.35,
+            active_energy_consumption: 165080.24,
+            threshold_percent: 30,
+            excess_consumption: 21802.28,
+            unit: 'kVArh',
+            rate: 0.0492,
+            rate_unit: 'PEN/kVArh',
+          },
+        },
+      ],
+      total_amount: null,
+      currency: null,
+      totals_by_currency: { USD: 1710.48, PEN: 1072.67 },
+    }
+
+    vi.spyOn(billingCyclesApi, 'fetchBillingCycles').mockResolvedValue(mockCycles)
+    vi.spyOn(billingCalculateApi, 'fetchBillingCalculate').mockResolvedValue(mixedBilling)
+
+    renderWithProviders(<BillingDetailTable sedeId={67} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Cargo por energía reactiva inductiva')).toBeInTheDocument()
+    })
+
+    // Energia reactiva: se muestra el exceso facturado, no el consumo total
+    expect(screen.getByText('21802.28 kVArh')).toBeInTheDocument()
+    expect(screen.getByText('0.05 S/ / kVArh')).toBeInTheDocument()
+
+    // Una fila de total por moneda (los importes tambien aparecen en sus filas de cargo)
+    expect(screen.getByText('Costo total USD')).toBeInTheDocument()
+    expect(screen.getByText('Costo total PEN')).toBeInTheDocument()
+    expect(screen.getAllByText('$ 1,710.48')).toHaveLength(2)
+    expect(screen.getAllByText('S/ 1,072.67')).toHaveLength(2)
   })
 })
