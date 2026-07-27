@@ -46,3 +46,17 @@ export function formatTime(dateStr: string): string {
     hour12: false,
   })
 }
+
+export function formatDateTimeShort(dateStr: string): string {
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return dateStr
+  const months = [
+    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+  ]
+  const day = date.getDate()
+  const month = months[date.getMonth()]
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${day} ${month}, ${hours}:${minutes}`
+}

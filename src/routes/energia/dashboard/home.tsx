@@ -8,6 +8,7 @@ import { ReadingsGraph } from '@/features/dashboard/components/readings-graph'
 import { useHomeFilters } from '@/features/dashboard/hooks/use-home-filters'
 import { fetchReadings } from '@/features/dashboard/api/readings'
 import { downloadReadingsReport } from '@/features/dashboard/api/download-report'
+import { findFirstIndicatorWithData } from '@/features/dashboard/utils/indicators'
 import { formatDateISO } from '@/lib/date-utils'
 import { getElectricParameter } from '@/lib/electric-parameters'
 
@@ -37,6 +38,7 @@ function HomeDashboardPage() {
     dateBefore,
     isReady,
     setPage,
+    measurementPoints,
   } = useHomeFilters()
 
   const dateAfterStr = formatDateISO(dateAfter) ?? ''
@@ -61,12 +63,20 @@ function HomeDashboardPage() {
   const [activeIndicator, setActiveIndicator] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
+  // Si el primer indicador no tiene datos, caer al primero que sí tenga
+  // para no mostrar el estado vacío por defecto
+  const firstIndicatorWithData = readingsData
+    ? findFirstIndicatorWithData(indicatorKeys, readingsData.results)
+    : null
+
   const resolvedIndicator =
     activeIndicator && indicatorKeys.includes(activeIndicator)
       ? activeIndicator
-      : (indicatorKeys[0] ?? 'P')
+      : (firstIndicatorWithData ?? indicatorKeys[0] ?? 'P')
 
   const indicatorLabel = getElectricParameter(resolvedIndicator)?.parameter ?? resolvedIndicator
+
+  const currentMeasurementPoint = measurementPoints.find((p) => p.id === puntoId) ?? null
 
   const handleDownloadExcel = async () => {
     if (!sedeId || !panelId || !dateAfterStr || !dateBeforeStr) return
@@ -113,6 +123,7 @@ function HomeDashboardPage() {
               availableIndicators={indicatorKeys}
               activeIndicator={resolvedIndicator}
               onIndicatorChange={setActiveIndicator}
+              thresholds={currentMeasurementPoint?.thresholds ?? null}
             />
             <ReadingsTable
               data={readingsData}

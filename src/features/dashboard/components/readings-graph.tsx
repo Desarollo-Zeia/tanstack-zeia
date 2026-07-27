@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Line, Bar } from 'react-chartjs-2'
 import {
@@ -12,18 +12,21 @@ import {
   Legend,
   type ChartData,
   type ChartOptions,
+  type Plugin,
   type TooltipItem,
 } from 'chart.js'
-import { Activity, BarChart3, Clock, LineChart } from 'lucide-react'
+import zoomPlugin from 'chartjs-plugin-zoom'
+import { Activity, BarChart3, Clock, LineChart, ZoomOut } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ZeiaSelect } from '@/components/ui/select'
 import { fetchReadingsGraph } from '@/features/dashboard/api/readings-graph'
-import { formatDateISO, formatDateShort } from '@/lib/date-utils'
+import { formatDateISO, formatDateShort, formatDateTimeShort } from '@/lib/date-utils'
 import { getElectricParameter } from '@/lib/electric-parameters'
 import type { Category } from '@/features/dashboard/hooks/use-home-filters'
+import type { MeasurementPointThresholds } from '@/features/dashboard/types'
 import { cn } from '@/lib/utils'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, zoomPlugin)
 
 const FALLBACK_INDICATORS = ['P', 'Q']
 
@@ -49,6 +52,11 @@ interface ReadingsGraphProps {
   availableIndicators: string[]
   activeIndicator: string
   onIndicatorChange: (indicator: string) => void
+  thresholds?: MeasurementPointThresholds | null
+}
+
+function formatThresholdValue(value: number): string {
+  return value.toLocaleString('es-PE', { maximumFractionDigits: 2 })
 }
 
 function formatTimeLabel(isoString: string, lastBy: LastBy): string {
@@ -72,23 +80,16 @@ function formatTimeLabel(isoString: string, lastBy: LastBy): string {
 }
 
 function formatTooltipTitle(isoString: string, lastBy: LastBy): string {
-  const date = new Date(isoString)
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  const seconds = String(date.getSeconds()).padStart(2, '0')
-
   switch (lastBy) {
     case 'minute':
-      return `${hours}:${minutes}:${seconds}`
     case 'hour':
-      return `${hours}:${minutes}`
+      return formatDateTimeShort(isoString)
     case 'day':
     case 'week':
-      return formatDateShort(isoString)
     case 'month':
       return formatDateShort(isoString)
     default:
-      return `${hours}:${minutes}:${seconds}`
+      return formatDateTimeShort(isoString)
   }
 }
 
@@ -102,12 +103,20 @@ export function ReadingsGraph({
   availableIndicators,
   activeIndicator,
   onIndicatorChange,
+  thresholds,
 }: ReadingsGraphProps) {
   const indicatorOptions =
     availableIndicators.length > 0 ? availableIndicators : FALLBACK_INDICATORS
 
   const [lastBy, setLastBy] = useState<LastBy>(category === 'energy' ? 'hour' : 'minute')
   const [chartType, setChartType] = useState<'line' | 'bar'>('line')
+  const lineChartRef = useRef<ChartJS<'line'> | null>(null)
+  const barChartRef = useRef<ChartJS<'bar'> | null>(null)
+
+  const handleResetZoom = () => {
+    const chart = lineChartRef.current ?? barChartRef.current
+    chart?.resetZoom()
+  }
 
   const dateAfterStr = formatDateISO(dateAfter) ?? ''
   const dateBeforeStr = formatDateISO(dateBefore) ?? ''
@@ -145,35 +154,119 @@ export function ReadingsGraph({
 
   const isEnergyCategory = category === 'energy'
 
-  const chartData = useMemo(() => {
-    const results = data ?? []
-    return {
-      labels: results.map((r) => formatTimeLabel(r.first_reading, lastBy)),
-      datasets: [
-        {
-          label: activeIndicator,
-          data: results.map((r) => (isEnergyCategory ? r.difference : r.first_value)),
-          borderColor: '#00B7CA',
-          backgroundColor: chartType === 'bar' ? 'rgba(0, 183, 202, 0.6)' : 'rgba(0, 183, 202, 0.1)',
-          borderWidth: chartType === 'bar' ? 0 : 2,
-          pointRadius: chartType === 'bar' ? 0 : 2,
-          pointHoverRadius: chartType === 'bar' ? 0 : 5,
-          tension: 0.3,
-          fill: chartType === 'line',
-          ...(chartType === 'bar' && {
-            barPercentage: 0.9,
-            categoryPercentage: 0.9,
-            borderRadius: 2,
-            borderSkipped: false,
-            maxBarThickness: 32,
-          }),
-        },
-      ],
-    }
-  }, [data, activeIndicator, lastBy, chartType, isEnergyCategory])
-
   const unit = data?.[0]?.unit ?? ''
   const activeParam = getElectricParameter(activeIndicator)
+  const thresholdUnit = activeParam?.unit ?? unit
+
+  // El umbral corresponde a la categoría del indicador seleccionado
+  const thresholdRange = thresholds?.[category] ?? null
+  const upperThreshold = thresholdRange?.upper_threshold ?? null
+  const lowerThreshold = thresholdRange?.lower_threshold ?? null
+
+  // Dibuja el valor del umbral (con unidad) directamente sobre cada línea
+  const thresholdLabelsPlugin = useMemo<Plugin<'line'>>(() => ({
+    id: 'thresholdLabels',
+    afterDraw: (chart) => {
+      const { ctx, chartArea, scales } = chart
+      if (!chartArea) return
+
+      const items: Array<{ value: number; color: string }> = []
+      if (upperThreshold !== null) items.push({ value: upperThreshold, color: '#E71D36' })
+      if (lowerThreshold !== null) items.push({ value: lowerThreshold, color: '#FF6B35' })
+      if (items.length === 0) return
+
+      ctx.save()
+      ctx.font = '600 11px Poppins, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+
+      for (const item of items) {
+        const y = scales.y.getPixelForValue(item.value)
+        if (y < chartArea.top || y > chartArea.bottom) continue
+
+        const text = `${formatThresholdValue(item.value)} ${thresholdUnit}`
+        const paddingX = 6
+        const boxHeight = 16
+        const boxWidth = ctx.measureText(text).width + paddingX * 2
+        const boxX = chartArea.right - boxWidth - 6
+        const boxY = y - boxHeight / 2
+
+        ctx.fillStyle = item.color
+        ctx.beginPath()
+        ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 4)
+        ctx.fill()
+
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillText(text, boxX + boxWidth / 2, y + 0.5)
+      }
+
+      ctx.restore()
+    },
+  }), [upperThreshold, lowerThreshold, thresholdUnit])
+
+  const chartData = useMemo(() => {
+    const results = data ?? []
+
+    const mainDataset = {
+      label: activeIndicator,
+      data: results.map((r) => (isEnergyCategory ? r.difference : r.first_value)),
+      borderColor: '#00B7CA',
+      backgroundColor: chartType === 'bar' ? 'rgba(0, 183, 202, 0.6)' : 'rgba(0, 183, 202, 0.1)',
+      borderWidth: chartType === 'bar' ? 0 : 2,
+      pointRadius: chartType === 'bar' ? 0 : 2,
+      pointHoverRadius: chartType === 'bar' ? 0 : 5,
+      tension: 0.3,
+      fill: chartType === 'line',
+      ...(chartType === 'bar' && {
+        barPercentage: 0.9,
+        categoryPercentage: 0.9,
+        borderRadius: 2,
+        borderSkipped: false,
+        maxBarThickness: 32,
+      }),
+    }
+
+    const thresholdDatasets = []
+    if (thresholdRange && results.length > 0) {
+      const pointCount = results.length
+      const baseThresholdDataset = {
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [6, 4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        tension: 0,
+        fill: false,
+        spanGaps: true,
+      }
+
+      if (upperThreshold !== null) {
+        thresholdDatasets.push({
+          ...baseThresholdDataset,
+          type: 'line' as const,
+          label: `Umbral superior: ${formatThresholdValue(upperThreshold)} ${thresholdUnit}`,
+          data: Array<number>(pointCount).fill(upperThreshold),
+          borderColor: '#E71D36',
+        })
+      }
+
+      if (lowerThreshold !== null) {
+        thresholdDatasets.push({
+          ...baseThresholdDataset,
+          type: 'line' as const,
+          label: `Umbral inferior: ${formatThresholdValue(lowerThreshold)} ${thresholdUnit}`,
+          data: Array<number>(pointCount).fill(lowerThreshold),
+          borderColor: '#FF6B35',
+        })
+      }
+    }
+
+    return {
+      labels: results.map((r) => formatTimeLabel(r.first_reading, lastBy)),
+      datasets: [mainDataset, ...thresholdDatasets],
+    }
+  }, [data, activeIndicator, lastBy, chartType, isEnergyCategory, thresholdRange, upperThreshold, lowerThreshold, thresholdUnit])
+
   const yAxisLabel = activeParam
     ? isEnergyCategory
       ? `Consumo de ${activeParam.parameter} (${activeParam.unit})`
@@ -196,6 +289,8 @@ export function ReadingsGraph({
           display: false,
         },
         tooltip: {
+          // No mostrar los umbrales en el tooltip, solo el dato del indicador
+          filter: (item) => !(item.dataset.label ?? '').startsWith('Umbral'),
           callbacks: {
             title: (items: TooltipItem<'line'>[]) => {
               const item = items[0]
@@ -214,6 +309,27 @@ export function ReadingsGraph({
                 maximumFractionDigits: 2,
               })} ${paramUnit}`
             },
+          },
+        },
+        zoom: {
+          limits: {
+            x: { min: 'original', max: 'original' },
+            y: { min: 'original', max: 'original' },
+          },
+          zoom: {
+            wheel: {
+              enabled: true,
+            },
+            pinch: {
+              enabled: true,
+            },
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(0, 183, 202, 0.12)',
+              borderColor: 'rgba(0, 183, 202, 0.5)',
+              borderWidth: 1,
+            },
+            mode: 'x',
           },
         },
       },
@@ -278,7 +394,19 @@ export function ReadingsGraph({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setChartType((prev) => (prev === 'line' ? 'bar' : 'line'))}
+              onClick={handleResetZoom}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border bg-card text-text-secondary border-border hover:border-primary/50"
+              title="Restablecer zoom"
+              aria-label="Restablecer zoom"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                handleResetZoom()
+                setChartType((prev) => (prev === 'line' ? 'bar' : 'line'))
+              }}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border',
                 chartType === 'bar'
@@ -298,7 +426,10 @@ export function ReadingsGraph({
               <ZeiaSelect
                 options={selectOptions}
                 value={activeIndicator}
-                onChange={(val) => onIndicatorChange(val)}
+                onChange={(val) => {
+                  handleResetZoom()
+                  onIndicatorChange(val)
+                }}
                 placeholder="Indicador"
                 icon={BarChart3}
               />
@@ -307,7 +438,10 @@ export function ReadingsGraph({
               <ZeiaSelect
                 options={lastByOptions}
                 value={lastBy}
-                onChange={(val) => setLastBy(val as LastBy)}
+                onChange={(val) => {
+                  handleResetZoom()
+                  setLastBy(val as LastBy)
+                }}
                 placeholder="Agrupar por"
                 icon={Clock}
               />
@@ -333,9 +467,19 @@ export function ReadingsGraph({
         ) : (
           <div className="flex-1 min-h-0">
             {chartType === 'line' ? (
-              <Line data={chartData as ChartData<'line'>} options={options} />
+              <Line
+                ref={lineChartRef}
+                data={chartData as ChartData<'line'>}
+                options={options}
+                plugins={[thresholdLabelsPlugin]}
+              />
             ) : (
-              <Bar data={chartData as ChartData<'bar'>} options={options as ChartOptions<'bar'>} />
+              <Bar
+                ref={barChartRef}
+                data={chartData as ChartData<'bar'>}
+                options={options as ChartOptions<'bar'>}
+                plugins={[thresholdLabelsPlugin as unknown as Plugin<'bar'>]}
+              />
             )}
           </div>
         )}

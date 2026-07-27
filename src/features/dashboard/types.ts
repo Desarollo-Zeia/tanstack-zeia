@@ -61,6 +61,19 @@ export interface MeasurementPointsResponse {
 }
 
 // Device Measurement Points List
+export interface MeasurementPointThresholdRange {
+  lower_threshold: number | null
+  upper_threshold: number | null
+  nominal_voltage?: number | null
+}
+
+export interface MeasurementPointThresholds {
+  voltage?: MeasurementPointThresholdRange | null
+  current?: MeasurementPointThresholdRange | null
+  power?: MeasurementPointThresholdRange | null
+  energy?: MeasurementPointThresholdRange | null
+}
+
 export interface DeviceMeasurementPoint {
   id: number
   name: string
@@ -75,6 +88,7 @@ export interface DeviceMeasurementPoint {
   electrical_panel: string
   location_reference: string
   installation_date: string | null
+  thresholds?: MeasurementPointThresholds | null
 }
 
 export interface DeviceMeasurementPointsListResponse {
