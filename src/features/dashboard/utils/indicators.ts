@@ -1,3 +1,5 @@
+import { getIndicatorCategory } from '@/lib/electric-parameters'
+import type { Category } from '../hooks/use-home-filters'
 import type { Reading } from '../types'
 
 /**
@@ -17,4 +19,20 @@ export function findFirstIndicatorWithData(
     if (hasData) return key
   }
   return null
+}
+
+/**
+ * Filtra las claves de indicadores dejando solo las que pertenecen a la
+ * categoría seleccionada (p. ej. para `energy` excluye P/Q/S de potencia).
+ * Las claves cuya categoría es desconocida se conservan para no ocultar
+ * indicadores nuevos del backend.
+ */
+export function filterIndicatorsByCategory(
+  indicatorKeys: string[],
+  category: Category
+): string[] {
+  return indicatorKeys.filter((key) => {
+    const keyCategory = getIndicatorCategory(key)
+    return keyCategory === null || keyCategory === category
+  })
 }

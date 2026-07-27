@@ -150,3 +150,32 @@ export function getElectricParameter(
 ): ElectricParameterValue | undefined {
   return ELECTRIC_PARAMETERS[key as ElectricParameterKey]
 }
+
+export type ElectricCategory = 'power' | 'energy' | 'current' | 'voltage'
+
+/**
+ * Devuelve la categoría a la que pertenece un indicador eléctrico según su
+ * clave (Ua→voltage, Ia→current, P/Q/S/F→power, EPpos/Et→energy, THDV→voltage,
+ * THDI→current). Retorna null para claves desconocidas.
+ */
+export function getIndicatorCategory(key: string): ElectricCategory | null {
+  if (key.startsWith('THDV')) return 'voltage'
+  if (key.startsWith('THDI')) return 'current'
+
+  switch (key.charAt(0)) {
+    case 'U':
+    case 'V':
+      return 'voltage'
+    case 'I':
+      return 'current'
+    case 'E':
+      return 'energy'
+    case 'P':
+    case 'Q':
+    case 'S':
+    case 'F':
+      return 'power'
+    default:
+      return null
+  }
+}

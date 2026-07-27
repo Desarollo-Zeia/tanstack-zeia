@@ -8,9 +8,10 @@ import { ReadingsGraph } from '@/features/dashboard/components/readings-graph'
 import { useHomeFilters } from '@/features/dashboard/hooks/use-home-filters'
 import { fetchReadings } from '@/features/dashboard/api/readings'
 import { downloadReadingsReport } from '@/features/dashboard/api/download-report'
-import { findFirstIndicatorWithData } from '@/features/dashboard/utils/indicators'
+import { findFirstIndicatorWithData, filterIndicatorsByCategory } from '@/features/dashboard/utils/indicators'
 import { formatDateISO } from '@/lib/date-utils'
 import { getElectricParameter } from '@/lib/electric-parameters'
+import type { Category } from '@/features/dashboard/hooks/use-home-filters'
 
 export const Route = createFileRoute('/energia/dashboard/home')({
   component: HomeDashboardPage,
@@ -60,19 +61,34 @@ function HomeDashboardPage() {
       ? Object.keys(readingsData.results[0].indicators.values)
       : []
 
-  const [activeIndicator, setActiveIndicator] = useState<string | null>(null)
+  // El selector solo ofrece indicadores de la categoría activa
+  const categoryIndicatorKeys = category
+    ? filterIndicatorsByCategory(indicatorKeys, category)
+    : indicatorKeys
+
+  // Selección ligada a la categoría en la que se hizo: al cambiar de
+  // categoría, la selección anterior se descarta automáticamente
+  const [indicatorSelection, setIndicatorSelection] = useState<{
+    category: Category
+    indicator: string
+  } | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
+  const activeIndicator =
+    indicatorSelection && indicatorSelection.category === category
+      ? indicatorSelection.indicator
+      : null
+
   // Si el primer indicador no tiene datos, caer al primero que sí tenga
-  // para no mostrar el estado vacío por defecto
+  // (siempre dentro de la categoría activa) para no mostrar el estado vacío
   const firstIndicatorWithData = readingsData
-    ? findFirstIndicatorWithData(indicatorKeys, readingsData.results)
+    ? findFirstIndicatorWithData(categoryIndicatorKeys, readingsData.results)
     : null
 
   const resolvedIndicator =
-    activeIndicator && indicatorKeys.includes(activeIndicator)
+    activeIndicator && categoryIndicatorKeys.includes(activeIndicator)
       ? activeIndicator
-      : (firstIndicatorWithData ?? indicatorKeys[0] ?? 'P')
+      : (firstIndicatorWithData ?? categoryIndicatorKeys[0] ?? 'P')
 
   const indicatorLabel = getElectricParameter(resolvedIndicator)?.parameter ?? resolvedIndicator
 
@@ -120,9 +136,11 @@ function HomeDashboardPage() {
               dateAfter={dateAfter}
               dateBefore={dateBefore}
               category={category}
-              availableIndicators={indicatorKeys}
+              availableIndicators={categoryIndicatorKeys}
               activeIndicator={resolvedIndicator}
-              onIndicatorChange={setActiveIndicator}
+              onIndicatorChange={(indicator) =>
+                category && setIndicatorSelection({ category, indicator })
+              }
               thresholds={currentMeasurementPoint?.thresholds ?? null}
             />
             <ReadingsTable
