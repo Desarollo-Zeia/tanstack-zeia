@@ -121,9 +121,23 @@ interface DeviceMeasurementPointsListResponse {
     electrical_panel: string
     location_reference: string
     installation_date: string | null
+    thresholds?: {
+      voltage?: ThresholdRange | null
+      current?: ThresholdRange | null
+      power?: ThresholdRange | null
+      energy?: ThresholdRange | null
+    } | null
   }>
 }
+
+interface ThresholdRange {
+  lower_threshold: number | null
+  upper_threshold: number | null
+  nominal_voltage?: number | null
+}
 ```
+
+> **Note:** `thresholds` is keyed by indicator **category** (`voltage`, `current`, `power`, `energy`). Only categories with configured thresholds are present. The "Tendencia de Indicador" chart (`readings-graph.tsx`) renders `lower_threshold`/`upper_threshold` as dashed horizontal lines for the active category.
 
 ---
 
