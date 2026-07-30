@@ -28,7 +28,12 @@ import { cn } from '@/lib/utils'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, zoomPlugin)
 
-const FALLBACK_INDICATORS = ['P', 'Q']
+const FALLBACK_INDICATORS: Record<Category, string[]> = {
+  power: ['P', 'Q'],
+  energy: ['Et', 'EPpos'],
+  current: ['Ia', 'Ib', 'Ic'],
+  voltage: ['Ua', 'Ub', 'Uc'],
+}
 
 const ALL_LAST_BY_OPTIONS = ['minute', 'hour', 'day', 'week', 'month'] as const
 const ENERGY_LAST_BY_OPTIONS = ['hour', 'day', 'week', 'month'] as const
@@ -106,7 +111,7 @@ export function ReadingsGraph({
   thresholds,
 }: ReadingsGraphProps) {
   const indicatorOptions =
-    availableIndicators.length > 0 ? availableIndicators : FALLBACK_INDICATORS
+    availableIndicators.length > 0 ? availableIndicators : FALLBACK_INDICATORS[category]
 
   const [lastBy, setLastBy] = useState<LastBy>(category === 'energy' ? 'hour' : 'minute')
   const [chartType, setChartType] = useState<'line' | 'bar'>('line')

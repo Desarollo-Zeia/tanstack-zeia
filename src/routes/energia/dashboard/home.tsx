@@ -8,7 +8,7 @@ import { ReadingsGraph } from '@/features/dashboard/components/readings-graph'
 import { useHomeFilters } from '@/features/dashboard/hooks/use-home-filters'
 import { fetchReadings } from '@/features/dashboard/api/readings'
 import { downloadReadingsReport } from '@/features/dashboard/api/download-report'
-import { findFirstIndicatorWithData, filterIndicatorsByCategory } from '@/features/dashboard/utils/indicators'
+import { findFirstIndicatorWithData, resolveCategoryIndicators } from '@/features/dashboard/utils/indicators'
 import { formatDateISO } from '@/lib/date-utils'
 import { getElectricParameter } from '@/lib/electric-parameters'
 import type { Category } from '@/features/dashboard/hooks/use-home-filters'
@@ -61,9 +61,10 @@ function HomeDashboardPage() {
       ? Object.keys(readingsData.results[0].indicators.values)
       : []
 
-  // El selector solo ofrece indicadores de la categoría activa
+  // El selector solo ofrece indicadores de la categoría activa; si el rango
+  // de fechas no trae datos, se cae al catálogo estático de la categoría
   const categoryIndicatorKeys = category
-    ? filterIndicatorsByCategory(indicatorKeys, category)
+    ? resolveCategoryIndicators(indicatorKeys, category)
     : indicatorKeys
 
   // Selección ligada a la categoría en la que se hizo: al cambiar de

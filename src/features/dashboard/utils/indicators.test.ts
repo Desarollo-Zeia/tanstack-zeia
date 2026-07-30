@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findFirstIndicatorWithData, filterIndicatorsByCategory } from './indicators'
+import { findFirstIndicatorWithData, filterIndicatorsByCategory, resolveCategoryIndicators } from './indicators'
 import type { Reading } from '../types'
 
 function buildReading(values: Record<string, number>): Reading {
@@ -79,5 +79,55 @@ describe('filterIndicatorsByCategory', () => {
   it('is a no-op when keys already belong to the category', () => {
     const keys = ['EPpos', 'EQpos', 'Et']
     expect(filterIndicatorsByCategory(keys, 'energy')).toEqual(keys)
+  })
+})
+
+describe('resolveCategoryIndicators', () => {
+  it('prefers backend keys when the date range has data', () => {
+    const keys = ['EPpos', 'EPposA', 'P', 'Q']
+    expect(resolveCategoryIndicators(keys, 'energy')).toEqual(['EPpos', 'EPposA'])
+    expect(resolveCategoryIndicators(keys, 'power')).toEqual(['P', 'Q'])
+  })
+
+  it('falls back to the static energy catalog when the range has no data', () => {
+    const resolved = resolveCategoryIndicators([], 'energy')
+    expect(resolved.length).toBeGreaterThan(0)
+    expect(resolved).toContain('EPpos')
+    expect(resolved).toContain('EPposA')
+    expect(resolved).toContain('Et')
+    expect(resolved).not.toContain('P')
+    expect(resolved).not.toContain('Ua')
+  })
+
+  it('falls back to the static power catalog when the range has no data', () => {
+    const resolved = resolveCategoryIndicators([], 'power')
+    expect(resolved).toContain('P')
+    expect(resolved).toContain('Q')
+    expect(resolved).not.toContain('EPpos')
+    expect(resolved).not.toContain('Ia')
+  })
+
+  it('falls back to the static voltage catalog when the range has no data', () => {
+    const resolved = resolveCategoryIndicators([], 'voltage')
+    expect(resolved).toContain('Ua')
+    expect(resolved).toContain('Ub')
+    expect(resolved).toContain('Uc')
+    expect(resolved).not.toContain('P')
+  })
+
+  it('falls back to the static current catalog when the range has no data', () => {
+    const resolved = resolveCategoryIndicators([], 'current')
+    expect(resolved).toContain('Ia')
+    expect(resolved).toContain('Ib')
+    expect(resolved).toContain('Ic')
+    expect(resolved).not.toContain('P')
+  })
+
+  it('every fallback key belongs to the requested category', () => {
+    for (const category of ['power', 'energy', 'current', 'voltage'] as const) {
+      const resolved = resolveCategoryIndicators([], category)
+      expect(resolved.length).toBeGreaterThan(0)
+      expect(resolved).toEqual(filterIndicatorsByCategory(resolved, category))
+    }
   })
 })
