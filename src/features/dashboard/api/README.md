@@ -428,10 +428,10 @@ interface RateConsumptionDateRangeResponse {
 
 ---
 
-## 12. Rate Consumption Cycle (Ciclo de Facturación)
+## 12. Consumption Cycle Detail (Ciclo de Facturación)
 
 ```
-GET /headquarter/{headquarter_id}/electrical_panel/rate-consumption/cycle
+GET /headquarter/{headquarter_id}/consumption-cycle/detail/
 ```
 
 Returns billing cycle information for a headquarter's electrical panels.
@@ -439,10 +439,10 @@ Returns billing cycle information for a headquarter's electrical panels.
 **Path params:**
 - `headquarter_id` (number, required)
 
-**Response:** `RateConsumptionCycleResponse` (see `src/features/dashboard/types.ts`)
+**Response:** `ConsumptionCycleDetailResponse` (see `src/features/dashboard/types.ts`)
 
 ```typescript
-interface RateConsumptionCycleResponse {
+interface ConsumptionCycleDetailResponse {
   power_contracted: number
   electrical_panel_type: string
   electrical_panel_threads: number

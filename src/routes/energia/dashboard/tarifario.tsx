@@ -3,7 +3,7 @@ import { DashboardShell } from '@/features/dashboard/components/shell'
 import { TarifarioFilters } from '@/features/dashboard/components/tarifario-filters'
 // import { TotalConsumptionCard } from '@/features/dashboard/components/total-consumption-card'
 import { BillingComparison } from '@/features/dashboard/components/billing-comparison'
-// import { BillingCycleTable } from '@/features/dashboard/components/billing-cycle-table'
+import { BillingCycleTable } from '@/features/dashboard/components/billing-cycle-table'
 import { BillingDetailTable } from '@/features/dashboard/components/billing-detail-table'
 import { useTarifarioFilters } from '@/features/dashboard/hooks/use-tarifario-filters'
 
@@ -32,7 +32,7 @@ function TarifarioPage() {
           <>
             {/* <TotalConsumptionCard sedeId={sedeId} /> */}
             <BillingComparison sedeId={sedeId} />
-            {/* <BillingCycleTable sedeId={sedeId} /> */}
+            <BillingCycleTable sedeId={sedeId} />
             <BillingDetailTable sedeId={sedeId} />
           </>
         )}

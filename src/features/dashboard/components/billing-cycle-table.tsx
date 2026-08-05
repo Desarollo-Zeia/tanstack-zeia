@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { FileText, Receipt } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { fetchRateConsumptionCycle } from '../api/rate-consumption-cycle'
+import { fetchConsumptionCycleDetail } from '../api/consumption-cycle-detail'
 import { fetchTariffPdfs } from '../api/tariff-pdfs'
 import { TariffPdfViewer } from './tariff-pdf-viewer'
 
@@ -35,8 +35,8 @@ export function BillingCycleTable({ sedeId }: BillingCycleTableProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['rate-consumption-cycle', sedeId],
-    queryFn: () => fetchRateConsumptionCycle(sedeId),
+    queryKey: ['consumption-cycle-detail', sedeId],
+    queryFn: () => fetchConsumptionCycleDetail(sedeId),
     enabled: !!sedeId,
   })
 

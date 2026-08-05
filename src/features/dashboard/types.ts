@@ -326,7 +326,7 @@ export interface RateConsumptionDateRangeResponse {
   cost: RateConsumptionBreakdown
 }
 
-export interface RateConsumptionCycleResponse {
+export interface ConsumptionCycleDetailResponse {
   power_contracted: number
   electrical_panel_type: string
   energy_provider: string | null
