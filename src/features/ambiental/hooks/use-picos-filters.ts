@@ -91,6 +91,7 @@ export function usePicosFilters() {
           hasta: formatDateISO(dateBefore),
           pagina: String(newPage),
         },
+        resetScroll: false,
       })
     },
     [navigate, indicador, unidad, dateAfter, dateBefore]

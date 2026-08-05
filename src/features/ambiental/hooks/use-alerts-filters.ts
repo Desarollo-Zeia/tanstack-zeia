@@ -127,6 +127,7 @@ export function useAlertsFilters() {
           hasta: formatDateISO(dateBefore),
           pagina: String(newPage),
         },
+        resetScroll: false,
       })
     },
     [navigate, roomId, indicador, dateAfter, dateBefore]

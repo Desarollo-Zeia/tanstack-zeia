@@ -71,6 +71,7 @@ export function useRoomsFilters() {
           sede: sedeId ? String(sedeId) : undefined,
           pagina: String(newPage),
         },
+        resetScroll: false,
       })
     },
     [navigate, sedeId]

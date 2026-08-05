@@ -234,6 +234,7 @@ export function useAlertsHistoryFilters() {
         indicator,
         phase,
       },
+      resetScroll: false,
     })
   }
 

@@ -193,6 +193,7 @@ export function useIndicadoresFilters() {
           hasta: formatDateISO(dateBefore),
           pagina: String(newPage),
         },
+        resetScroll: false,
       })
     },
     [navigate, sedeId, salaId, indicador, unidad, dateAfter, dateBefore]

@@ -272,6 +272,7 @@ export function useHomeFilters() {
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
         },
+        resetScroll: false,
       })
     },
     [navigate, sedeId, panelId, puntoId, category, dateAfter, dateBefore, today]
