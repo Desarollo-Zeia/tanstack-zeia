@@ -6,29 +6,10 @@ import { Button } from '@/components/ui/button'
 import { fetchConsumptionCycleDetail } from '../api/consumption-cycle-detail'
 import { fetchTariffPdfs } from '../api/tariff-pdfs'
 import { TariffPdfViewer } from './tariff-pdf-viewer'
+import { formatDateShort } from '@/lib/date-utils'
 
 interface BillingCycleTableProps {
   sedeId: number
-}
-
-function parseCycleDate(dateStr: string): Date | null {
-  if (!dateStr) return null
-  const months: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  }
-  const parts = dateStr.split('-')
-  if (parts.length !== 3) return null
-  const [day, month, year] = parts
-  return new Date(Number(year), months[month] ?? 0, Number(day))
-}
-
-function formatCycleDate(dateStr: string): string {
-  const date = parseCycleDate(dateStr)
-  if (!date) return dateStr || '—'
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = date.toLocaleString('es-ES', { month: 'long' })
-  return `${day} ${month}`
 }
 
 export function BillingCycleTable({ sedeId }: BillingCycleTableProps) {
@@ -74,7 +55,7 @@ export function BillingCycleTable({ sedeId }: BillingCycleTableProps) {
     },
     {
       label: 'Ciclo de Facturación',
-      value: `${formatCycleDate(data.billing_cycle_start)} — ${formatCycleDate(data.billing_cycle_end)}`,
+      value: `${formatDateShort(data.billing_cycle_start)} — ${formatDateShort(data.billing_cycle_end)}`,
     },
     { label: 'Potencia Contratada', value: `${data.power_contracted} kW` },
     { label: 'Tipo', value: data.electrical_panel_type },
