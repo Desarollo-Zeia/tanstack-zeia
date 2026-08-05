@@ -76,7 +76,7 @@ export function PanelReadingsChart({
       datasets: [
         {
           label: param?.parameter ?? indicador,
-          data: results.map((r) => r.first_value),
+          data: results.map((r) => r.difference),
           backgroundColor: 'rgba(0, 183, 202, 0.6)',
           borderColor: '#00B7CA',
           borderWidth: 1,
