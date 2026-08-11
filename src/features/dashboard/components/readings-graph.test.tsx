@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { ReadingsGraph } from './readings-graph'
@@ -143,6 +144,91 @@ describe('ReadingsGraph', () => {
     })
 
     expect(screen.getByText('Minuto')).toBeInTheDocument()
+  })
+
+  it('shows "15 minutos" and "30 minutos" options for power category', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetchReadingsGraph).mockResolvedValue([
+      {
+        period: '2026-06-24T08:00:00-05:00',
+        first_reading: '2026-06-24T08:00:00-05:00',
+        last_reading: '2026-06-24T08:00:00-05:00',
+        indicator: 'P',
+        unit: 'KW',
+        first_value: 100.0,
+        last_value: 100.0,
+        difference: null,
+        device: '00956906000ab814',
+        measurement_point: 'Chiller 1',
+      },
+    ])
+
+    render(<ReadingsGraph {...baseProps} category="power" />, {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    })
+
+    const lastBySelect = screen.getAllByRole('combobox')[1]
+    await user.click(lastBySelect)
+
+    expect(screen.getByRole('option', { name: '15 minutos' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '30 minutos' })).toBeInTheDocument()
+  })
+
+  it('does not show "15 minutos" or "30 minutos" options for energy category', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetchReadingsGraph).mockResolvedValue(mockEnergyData)
+
+    render(<ReadingsGraph {...baseProps} category="energy" />, {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    })
+
+    const lastBySelect = screen.getAllByRole('combobox')[1]
+    await user.click(lastBySelect)
+
+    expect(screen.queryByRole('option', { name: '15 minutos' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: '30 minutos' })).not.toBeInTheDocument()
+  })
+
+  it('calls fetchReadingsGraph with 15min last_by after selecting "15 minutos"', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetchReadingsGraph).mockResolvedValue([
+      {
+        period: '2026-06-24T08:00:00-05:00',
+        first_reading: '2026-06-24T08:00:00-05:00',
+        last_reading: '2026-06-24T08:00:00-05:00',
+        indicator: 'P',
+        unit: 'KW',
+        first_value: 100.0,
+        last_value: 100.0,
+        difference: null,
+        device: '00956906000ab814',
+        measurement_point: 'Chiller 1',
+      },
+    ])
+
+    render(<ReadingsGraph {...baseProps} category="power" />, {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    })
+
+    const lastBySelect = screen.getAllByRole('combobox')[1]
+    await user.click(lastBySelect)
+    await user.click(screen.getByRole('option', { name: '15 minutos' }))
+
+    await waitFor(() => {
+      expect(fetchReadingsGraph).toHaveBeenCalledWith(67, 39, 77, '2026-06-24', '2026-06-24', 'EPpos', '15min')
+    })
   })
 
   it('calls fetchReadingsGraph with hour last_by for energy category', async () => {

@@ -35,12 +35,14 @@ const FALLBACK_INDICATORS: Record<Category, string[]> = {
   voltage: ['Ua', 'Ub', 'Uc'],
 }
 
-const ALL_LAST_BY_OPTIONS = ['minute', 'hour', 'day', 'week', 'month'] as const
+const ALL_LAST_BY_OPTIONS = ['minute', '15min', '30min', 'hour', 'day', 'week', 'month'] as const
 const ENERGY_LAST_BY_OPTIONS = ['hour', 'day', 'week', 'month'] as const
 export type LastBy = (typeof ALL_LAST_BY_OPTIONS)[number]
 
 const LAST_BY_LABELS: Record<LastBy, string> = {
   minute: 'Minuto',
+  '15min': '15 minutos',
+  '30min': '30 minutos',
   hour: 'Hora',
   day: 'Día',
   week: 'Semana',
@@ -71,7 +73,8 @@ function formatTimeLabel(isoString: string, lastBy: LastBy): string {
 
   switch (lastBy) {
     case 'minute':
-      return `${hours}:${minutes}`
+    case '15min':
+    case '30min':
     case 'hour':
       return `${hours}:${minutes}`
     case 'day':
@@ -87,6 +90,8 @@ function formatTimeLabel(isoString: string, lastBy: LastBy): string {
 function formatTooltipTitle(isoString: string, lastBy: LastBy): string {
   switch (lastBy) {
     case 'minute':
+    case '15min':
+    case '30min':
     case 'hour':
       return formatDateTimeShort(isoString)
     case 'day':
