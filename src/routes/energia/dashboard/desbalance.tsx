@@ -104,6 +104,10 @@ function DesbalancePage() {
               </div>
             </div>
 
+            <p className="text-xs text-text-muted">
+              El cálculo se realizó basándose en la normativa Standard IEEE 141
+            </p>
+
             <ImbalancedEventsTable
               headquarterId={sedeId}
               panelId={panelId}
