@@ -18,7 +18,7 @@ export async function downloadReadingsReport(
   })
 
   const url = `${API_BASE_URL}/api/v1/headquarter/${params.headquarterId}/electrical_panel/${params.panelId}/readings/report?${searchParams.toString()}`
-  const filename = `reporte_lecturas_${params.dateAfter}_${params.dateBefore}.xlsx`
+  const filename = `reporte_lecturas_${params.dateAfter}_${params.dateBefore}.csv`
 
   return downloadExcelFile(url, filename)
 }
