@@ -1,8 +1,10 @@
-import { Building2, Zap, Activity, Tag, Star } from 'lucide-react'
+import { useState } from 'react'
+import { Building2, Zap, Activity, Tag, Star, FileSpreadsheet, FileText } from 'lucide-react'
 import { ZeiaSelect } from '@/components/ui/select'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { useHomeFilters, VALID_CATEGORIES } from '../hooks/use-home-filters'
 import type { Category } from '../hooks/use-home-filters'
+import type { ReportFileFormat } from '../api/download-report'
 import { cn } from '@/lib/utils'
 
 
@@ -13,13 +15,19 @@ const CATEGORY_LABELS: Record<Category, string> = {
   voltage: 'Voltaje',
 }
 
+const FILE_FORMATS: Array<{ value: ReportFileFormat; label: string; icon: typeof FileSpreadsheet }> = [
+  { value: 'xlsx', label: 'XLSX', icon: FileSpreadsheet },
+  { value: 'csv', label: 'CSV', icon: FileText },
+]
+
 interface HomeFiltersProps {
-  onDownloadExcel?: () => void
+  onDownloadExcel?: (format: ReportFileFormat) => void
   isDownloadingExcel?: boolean
   canDownload?: boolean
 }
 
 export function HomeFilters({ onDownloadExcel, isDownloadingExcel, canDownload }: HomeFiltersProps) {
+  const [fileFormat, setFileFormat] = useState<ReportFileFormat>('xlsx')
   const {
     headquarters,
     panels,
@@ -179,23 +187,59 @@ export function HomeFilters({ onDownloadExcel, isDownloadingExcel, canDownload }
         />
       </div>
 
-      {/* Download Excel */}
+      {/* Download: Format segmented control + button */}
       {onDownloadExcel && (
-        <div className="flex flex-col gap-1.5">
-          <label className="label-executive text-text-muted opacity-0 select-none">Descargar</label>
-          <button
-            onClick={onDownloadExcel}
-            disabled={isDownloadingExcel || !canDownload}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors h-[43px]',
-              'bg-green-600 text-white hover:bg-green-700',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
-            )}
-          >
-            <img src="/excel.png" alt="Excel" className="w-4 h-4" />
-            {isDownloadingExcel ? 'Descargando...' : 'Descargar Excel'}
-          </button>
-        </div>
+        <>
+          <div className="flex flex-col gap-1.5">
+            <label className="label-executive text-text-muted">Formato de Descarga</label>
+            <div
+              role="radiogroup"
+              aria-label="Formato de descarga"
+              className="inline-flex items-center gap-1 p-1 rounded-lg border border-border bg-card h-[43px]"
+            >
+              {FILE_FORMATS.map(({ value, label, icon: Icon }) => {
+                const isActive = fileFormat === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
+                    onClick={() => setFileFormat(value)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 rounded-md text-sm font-semibold transition-all duration-200 h-[33px]',
+                      isActive
+                        ? 'bg-green-600 text-white shadow-soft'
+                        : 'text-text-muted hover:text-text-primary hover:bg-muted'
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="label-executive text-text-muted opacity-0 select-none">Descargar</label>
+            <button
+              onClick={() => onDownloadExcel(fileFormat)}
+              disabled={isDownloadingExcel || !canDownload}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors h-[43px]',
+                'bg-green-600 text-white hover:bg-green-700',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {fileFormat === 'xlsx' ? (
+                <img src="/excel.png" alt="Excel" className="w-4 h-4" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              {isDownloadingExcel ? 'Descargando...' : `Descargar ${fileFormat.toUpperCase()}`}
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

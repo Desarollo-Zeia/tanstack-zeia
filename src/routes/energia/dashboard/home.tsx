@@ -8,6 +8,7 @@ import { ReadingsGraph } from '@/features/dashboard/components/readings-graph'
 import { useHomeFilters } from '@/features/dashboard/hooks/use-home-filters'
 import { fetchReadings } from '@/features/dashboard/api/readings'
 import { downloadReadingsReport } from '@/features/dashboard/api/download-report'
+import type { ReportFileFormat } from '@/features/dashboard/api/download-report'
 import { findFirstIndicatorWithData, resolveCategoryIndicators } from '@/features/dashboard/utils/indicators'
 import { formatDateISO } from '@/lib/date-utils'
 import { getElectricParameter } from '@/lib/electric-parameters'
@@ -95,7 +96,7 @@ function HomeDashboardPage() {
 
   const currentMeasurementPoint = measurementPoints.find((p) => p.id === puntoId) ?? null
 
-  const handleDownloadExcel = async () => {
+  const handleDownloadExcel = async (format: ReportFileFormat) => {
     if (!sedeId || !panelId || !dateAfterStr || !dateBeforeStr) return
     setIsDownloading(true)
     try {
@@ -104,6 +105,7 @@ function HomeDashboardPage() {
         panelId,
         dateAfter: dateAfterStr,
         dateBefore: dateBeforeStr,
+        fileFormat: format,
       })
     } catch (error) {
       console.error('Error downloading report:', error)
