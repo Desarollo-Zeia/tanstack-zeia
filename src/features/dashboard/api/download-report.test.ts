@@ -14,10 +14,11 @@ describe('downloadReadingsReport', () => {
     downloadExcelFileMock.mockResolvedValue(undefined)
   })
 
-  it('incluye file_format=xlsx en la URL y filename .xlsx', async () => {
+  it('incluye file_format=xlsx en la URL y filename con nombre del panel', async () => {
     await downloadReadingsReport({
       headquarterId: 67,
       panelId: 39,
+      panelName: 'Tablero General',
       dateAfter: '2026-06-01',
       dateBefore: '2026-06-30',
       fileFormat: 'xlsx',
@@ -26,13 +27,14 @@ describe('downloadReadingsReport', () => {
     expect(downloadExcelFileMock).toHaveBeenCalledTimes(1)
     const [url, filename] = downloadExcelFileMock.mock.calls[0]
     expect(url).toContain('file_format=xlsx')
-    expect(filename).toBe('reporte_lecturas_2026-06-01_2026-06-30.xlsx')
+    expect(filename).toBe('Tablero_General_2026-06-01_2026-06-30.xlsx')
   })
 
-  it('incluye file_format=csv en la URL y filename .csv', async () => {
+  it('incluye file_format=csv en la URL y filename con nombre del panel', async () => {
     await downloadReadingsReport({
       headquarterId: 67,
       panelId: 39,
+      panelName: 'TG-TR2',
       dateAfter: '2026-06-01',
       dateBefore: '2026-06-30',
       fileFormat: 'csv',
@@ -41,13 +43,14 @@ describe('downloadReadingsReport', () => {
     expect(downloadExcelFileMock).toHaveBeenCalledTimes(1)
     const [url, filename] = downloadExcelFileMock.mock.calls[0]
     expect(url).toContain('file_format=csv')
-    expect(filename).toBe('reporte_lecturas_2026-06-01_2026-06-30.csv')
+    expect(filename).toBe('TG-TR2_2026-06-01_2026-06-30.csv')
   })
 
   it('incluye date_after y date_before en la URL', async () => {
     await downloadReadingsReport({
       headquarterId: 67,
       panelId: 39,
+      panelName: 'TG-TR2',
       dateAfter: '2026-06-01',
       dateBefore: '2026-06-30',
       fileFormat: 'xlsx',

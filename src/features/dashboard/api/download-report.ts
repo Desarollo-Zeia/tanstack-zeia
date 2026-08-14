@@ -7,6 +7,7 @@ export type ReportFileFormat = 'csv' | 'xlsx'
 export interface DownloadReadingsReportParams {
   headquarterId: number
   panelId: number
+  panelName: string
   dateAfter: string
   dateBefore: string
   fileFormat: ReportFileFormat
@@ -22,7 +23,8 @@ export async function downloadReadingsReport(
   })
 
   const url = `${API_BASE_URL}/api/v1/headquarter/${params.headquarterId}/electrical_panel/${params.panelId}/readings/report?${searchParams.toString()}`
-  const filename = `reporte_lecturas_${params.dateAfter}_${params.dateBefore}.${params.fileFormat}`
+  const safePanelName = params.panelName.replace(/\s+/g, '_')
+  const filename = `${safePanelName}_${params.dateAfter}_${params.dateBefore}.${params.fileFormat}`
 
   return downloadExcelFile(url, filename)
 }

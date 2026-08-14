@@ -41,6 +41,7 @@ function HomeDashboardPage() {
     isReady,
     setPage,
     measurementPoints,
+    panels,
   } = useHomeFilters()
 
   const dateAfterStr = formatDateISO(dateAfter) ?? ''
@@ -95,6 +96,7 @@ function HomeDashboardPage() {
   const indicatorLabel = getElectricParameter(resolvedIndicator)?.parameter ?? resolvedIndicator
 
   const currentMeasurementPoint = measurementPoints.find((p) => p.id === puntoId) ?? null
+  const currentPanelName = panels.find((p) => p.id === panelId)?.name ?? 'tablero'
 
   const handleDownloadExcel = async (format: ReportFileFormat) => {
     if (!sedeId || !panelId || !dateAfterStr || !dateBeforeStr) return
@@ -103,6 +105,7 @@ function HomeDashboardPage() {
       await downloadReadingsReport({
         headquarterId: sedeId,
         panelId,
+        panelName: currentPanelName,
         dateAfter: dateAfterStr,
         dateBefore: dateBeforeStr,
         fileFormat: format,
