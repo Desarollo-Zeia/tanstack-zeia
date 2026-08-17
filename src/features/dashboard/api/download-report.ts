@@ -13,6 +13,11 @@ export interface DownloadReadingsReportParams {
   fileFormat: ReportFileFormat
 }
 
+function formatFilenameDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-')
+  return `${day}-${month}-${year.slice(2)}`
+}
+
 export async function downloadReadingsReport(
   params: DownloadReadingsReportParams
 ): Promise<void> {
@@ -24,7 +29,9 @@ export async function downloadReadingsReport(
 
   const url = `${API_BASE_URL}/api/v1/headquarter/${params.headquarterId}/electrical_panel/${params.panelId}/readings/report?${searchParams.toString()}`
   const safePanelName = params.panelName.replace(/\s+/g, '_')
-  const filename = `${safePanelName}_${params.dateAfter}_${params.dateBefore}.${params.fileFormat}`
+  const dateAfterStr = formatFilenameDate(params.dateAfter)
+  const dateBeforeStr = formatFilenameDate(params.dateBefore)
+  const filename = `${safePanelName}_${dateAfterStr}_${dateBeforeStr}.${params.fileFormat}`
 
   return downloadExcelFile(url, filename)
 }

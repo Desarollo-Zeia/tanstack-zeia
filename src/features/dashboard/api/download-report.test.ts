@@ -27,7 +27,7 @@ describe('downloadReadingsReport', () => {
     expect(downloadExcelFileMock).toHaveBeenCalledTimes(1)
     const [url, filename] = downloadExcelFileMock.mock.calls[0]
     expect(url).toContain('file_format=xlsx')
-    expect(filename).toBe('Tablero_General_2026-06-01_2026-06-30.xlsx')
+    expect(filename).toBe('Tablero_General_01-06-26_30-06-26.xlsx')
   })
 
   it('incluye file_format=csv en la URL y filename con nombre del panel', async () => {
@@ -43,7 +43,7 @@ describe('downloadReadingsReport', () => {
     expect(downloadExcelFileMock).toHaveBeenCalledTimes(1)
     const [url, filename] = downloadExcelFileMock.mock.calls[0]
     expect(url).toContain('file_format=csv')
-    expect(filename).toBe('TG-TR2_2026-06-01_2026-06-30.csv')
+    expect(filename).toBe('TG-TR2_01-06-26_30-06-26.csv')
   })
 
   it('incluye date_after y date_before en la URL', async () => {
