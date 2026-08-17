@@ -17,6 +17,7 @@ import { fetchIndicatorGraphs } from '../api/indicators'
 import { EstadisticasChartByDate } from './estadisticas-chart-by-date'
 import { EstadisticasChartCombined } from './estadisticas-chart-combined'
 import { formatDateShort, formatDateReadable } from '@/lib/date-utils'
+import { buildUnionAxis, alignToAxis, type AxisEntry } from '../utils/align-chart-readings'
 import type { Room, RoomIndicatorData, ViewMode } from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
@@ -54,20 +55,28 @@ function buildChartData(
   rooms: RoomIndicatorData[],
   visibleRooms: Set<number>,
   useDateLabels: boolean
-): ChartData<'line'> {
+): { chartData: ChartData<'line'>; axis: AxisEntry<RoomIndicatorData['readings'][number]>[] } {
   if (rooms.length === 0) {
-    return { labels: [], datasets: [] }
+    return { chartData: { labels: [], datasets: [] }, axis: [] }
   }
 
-  // When the selected date range spans more than two days, display dates
-  // on the X-axis instead of hours.
-  const labels = useDateLabels
-    ? rooms[0].readings.map((r) => formatDateShort(r.date))
-    : rooms[0].readings.map((r) => r.hour)
+  // Union of every room's time slots, so rooms with readings at hours the
+  // first room lacks are still rendered at their correct position.
+  const keyOf = (r: RoomIndicatorData['readings'][number]) => `${r.date}|${r.hour}`
+  const labelOf = (r: RoomIndicatorData['readings'][number]) =>
+    useDateLabels ? formatDateShort(r.date) : r.hour
+
+  const axis = buildUnionAxis(
+    rooms.map((room) => room.readings),
+    keyOf,
+    labelOf
+  )
+
+  const labels = axis.map((entry) => entry.label)
 
   const roomDatasets = rooms.map((room, index) => ({
     label: room.room_name,
-    data: room.readings.map((r) => r.value),
+    data: alignToAxis(room.readings, axis, keyOf),
     borderColor: ROOM_COLORS[index % ROOM_COLORS.length],
     backgroundColor: ROOM_COLORS[index % ROOM_COLORS.length] + '20',
     borderWidth: 2,
@@ -75,12 +84,16 @@ function buildChartData(
     pointHoverRadius: 5,
     tension: 0.3,
     fill: false,
+    spanGaps: true,
     hidden: !visibleRooms.has(room.room_id),
   }))
 
   return {
-    labels,
-    datasets: roomDatasets,
+    chartData: {
+      labels,
+      datasets: roomDatasets,
+    },
+    axis,
   }
 }
 
@@ -108,7 +121,7 @@ function getDaysInRange(start: Date, end: Date): number {
 
 function getChartOptions(
   unit: string,
-  rooms: RoomIndicatorData[]
+  axis: AxisEntry<RoomIndicatorData['readings'][number]>[]
 ): ChartOptions<'line'> {
   const unitLabel = getUnitLabel(unit)
 
@@ -140,10 +153,10 @@ function getChartOptions(
         callbacks: {
           title: (context) => {
             const dataIndex = context[0]?.dataIndex
-            if (dataIndex === undefined || rooms.length === 0) return ''
-            const reading = rooms[0].readings[dataIndex]
-            if (!reading) return ''
-            return `${formatDateReadable(reading.date)}, ${reading.hour}`
+            if (dataIndex === undefined) return ''
+            const entry = axis[dataIndex]
+            if (!entry) return ''
+            return `${formatDateReadable(entry.reading.date)}, ${entry.reading.hour}`
           },
           label: (context) => {
             const value = context.parsed.y
@@ -212,11 +225,13 @@ export function EstadisticasChart({
   })
 
   const [visibleRooms, setVisibleRooms] = useState<Set<number>>(new Set())
-  const hasInitialized = useRef(false)
+  const previousRoomsKeyRef = useRef('')
 
   useEffect(() => {
-    if (data && data.length > 0 && !hasInitialized.current) {
-      hasInitialized.current = true
+    if (!data || data.length === 0) return
+    const roomsKey = data.map((room) => room.room_id).join(',')
+    if (previousRoomsKeyRef.current !== roomsKey) {
+      previousRoomsKeyRef.current = roomsKey
       setVisibleRooms(new Set([data[0].room_id]))
     }
   }, [data])
@@ -224,8 +239,10 @@ export function EstadisticasChart({
   const daysInRange = getDaysInRange(dateAfter, dateBefore)
   const useDateLabels = daysInRange > 2
 
-  const chartData = useMemo(() => {
-    if (!data || data.length === 0) return { labels: [], datasets: [] }
+  const { chartData, axis } = useMemo(() => {
+    if (!data || data.length === 0) {
+      return { chartData: { labels: [], datasets: [] } as ChartData<'line'>, axis: [] }
+    }
     return buildChartData(data, visibleRooms, useDateLabels)
   }, [data, visibleRooms, useDateLabels])
 
@@ -375,7 +392,7 @@ export function EstadisticasChart({
                 <Line
                   key={Array.from(visibleRooms).sort().join(',')}
                   data={chartData}
-                  options={getChartOptions(unit, data)}
+                  options={getChartOptions(unit, axis)}
                 />
               </div>
             ) : (

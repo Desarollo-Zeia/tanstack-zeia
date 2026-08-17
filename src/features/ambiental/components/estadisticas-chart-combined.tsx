@@ -14,6 +14,7 @@ import { Line } from 'react-chartjs-2'
 import { cn } from '@/lib/utils'
 import { fetchRoomIndicatorGraph } from '../api/indicators'
 import { formatDateReadable, formatDateShort } from '@/lib/date-utils'
+import { buildUnionAxis, alignToAxis } from '../utils/align-chart-readings'
 import type { Room } from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
@@ -59,16 +60,22 @@ function buildChartData(
     return { labels: [], datasets: [] }
   }
 
-  const firstVisible = datasets.find((d) => !d.hidden)
-  const labels = firstVisible
-    ? firstVisible.readings.map((r) => r.hour)
-    : datasets[0].readings.map((r) => r.hour)
+  // Union of every dataset's hours, so lines with readings at hours the
+  // first dataset lacks are still rendered at their correct position.
+  const keyOf = (r: { hour: string; value: number }) => r.hour
+  const axis = buildUnionAxis(
+    datasets.map((d) => d.readings),
+    keyOf,
+    keyOf
+  )
+
+  const labels = axis.map((entry) => entry.label)
 
   return {
     labels,
     datasets: datasets.map((d) => ({
       label: `${d.roomName} - ${formatDateShort(d.key.date)}`,
-      data: d.readings.map((r) => r.value),
+      data: alignToAxis(d.readings, axis, keyOf),
       borderColor: d.color,
       backgroundColor: d.color + '20',
       borderWidth: 2,
@@ -78,6 +85,7 @@ function buildChartData(
       pointHoverBorderColor: d.color,
       tension: 0.3,
       fill: false,
+      spanGaps: true,
       hidden: d.hidden,
     })),
   }

@@ -13,6 +13,7 @@ import {
 import { Line } from 'react-chartjs-2'
 import { cn } from '@/lib/utils'
 import { fetchRoomIndicatorGraph } from '../api/indicators'
+import { buildUnionAxis, alignToAxis } from '../utils/align-chart-readings'
 import type { RoomIndicatorGraphResponse } from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
@@ -64,12 +65,22 @@ function buildChartData(
     return { labels: [], datasets: [] }
   }
 
-  const firstDateReadings = data[dates[0]]
-  const labels = firstDateReadings.map((r) => r.hour)
+  // Union of every date's hours, so dates with readings at hours the first
+  // date lacks are still rendered at their correct position.
+  const keyOf = (r: { hour: string; value: number }) => r.hour
+  const labelOf = (r: { hour: string; value: number }) => r.hour
+
+  const axis = buildUnionAxis(
+    dates.map((date) => data[date]),
+    keyOf,
+    labelOf
+  )
+
+  const labels = axis.map((entry) => entry.label)
 
   const dateDatasets = dates.map((date, index) => ({
     label: formatDateShort(date),
-    data: data[date].map((r) => r.value),
+    data: alignToAxis(data[date], axis, keyOf),
     borderColor: DATE_COLORS[index % DATE_COLORS.length],
     backgroundColor: DATE_COLORS[index % DATE_COLORS.length] + '20',
     borderWidth: 2,
@@ -77,6 +88,7 @@ function buildChartData(
     pointHoverRadius: 5,
     tension: 0.3,
     fill: false,
+    spanGaps: true,
     hidden: !visibleDates.has(date),
   }))
 
