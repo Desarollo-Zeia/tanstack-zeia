@@ -35,12 +35,14 @@ export interface RoomDevice {
   id: number
   dev_eui: string
   type_sensor: string
+  no_data_status?: string
 }
 
 export interface Room {
   id: number
   name: string
   status: string
+  connection_status: string
   headquarter: {
     id: number
     name: string

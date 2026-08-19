@@ -57,7 +57,7 @@ interface RoomCardProps {
 function RoomCard({ room }: RoomCardProps) {
   const status = getStatusHeaderStyle(room.status)
   const firstDevice = room.devices[0]
-  const isConnected = room.is_activated && room.status !== 'OFFLINE'
+  const isConnected = room.connection_status === 'connected'
 
   return (
     <div className="card-executive overflow-hidden group hover:-translate-y-0.5 transition-all duration-300">

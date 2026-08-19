@@ -22,8 +22,8 @@ vi.mock('../api/rooms', () => ({
     next: null,
     previous: null,
     results: [
-      { id: 1, name: 'Sala A', status: 'GOOD', headquarter: { id: 1, name: 'Sede 1' }, devices: [], report_link: null, is_activated: true, has_reports: true, co2_monitoring_time: 0 },
-      { id: 2, name: 'Sala B', status: 'GOOD', headquarter: { id: 1, name: 'Sede 1' }, devices: [], report_link: null, is_activated: true, has_reports: true, co2_monitoring_time: 0 },
+      { id: 1, name: 'Sala A', status: 'GOOD', connection_status: 'connected', headquarter: { id: 1, name: 'Sede 1' }, devices: [], report_link: null, is_activated: true, has_reports: true, co2_monitoring_time: 0 },
+      { id: 2, name: 'Sala B', status: 'GOOD', connection_status: 'connected', headquarter: { id: 1, name: 'Sede 1' }, devices: [], report_link: null, is_activated: true, has_reports: true, co2_monitoring_time: 0 },
     ],
   }),
   ROOMS_PAGE_SIZE: 10,
