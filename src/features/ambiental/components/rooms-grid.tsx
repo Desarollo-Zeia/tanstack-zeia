@@ -58,15 +58,17 @@ function RoomCard({ room }: RoomCardProps) {
   const status = getStatusHeaderStyle(room.status)
   const firstDevice = room.devices[0]
   const isConnected = room.connection_status === 'connected'
+  const headerBg = isConnected ? status.bg : 'bg-gray-400 dark:bg-gray-600'
+  const headerText = isConnected ? status.text : 'text-white'
 
   return (
     <div className="card-executive overflow-hidden group hover:-translate-y-0.5 transition-all duration-300">
-      <div className={cn('relative px-5 py-5 overflow-hidden', status.bg)}>
+      <div className={cn('relative px-5 py-5 overflow-hidden', headerBg)}>
         <div className="flex items-center justify-between gap-3 relative z-10">
           <span
             className={cn(
               'text-2xl font-bold tracking-tight truncate',
-              status.text
+              headerText
             )}
           >
             {status.label}
@@ -102,7 +104,7 @@ function RoomCard({ room }: RoomCardProps) {
             backgroundImage:
               'radial-gradient(circle, currentColor 1px, transparent 1px)',
             backgroundSize: '14px 14px',
-            color: status.text === 'text-white' ? '#ffffff' : '#1C1C1E',
+            color: headerText === 'text-white' ? '#ffffff' : '#1C1C1E',
           }}
         />
       </div>
