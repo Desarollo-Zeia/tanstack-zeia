@@ -108,6 +108,21 @@ export function MonthlyBillingView({ sedeId }: MonthlyBillingViewProps) {
 
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-2">
+        <MonthlyBillingChart
+          cycles={cycles}
+          amounts={amounts}
+          displayCurrency={displayCurrency}
+          selectedCycleId={selectedCycle?.id ?? null}
+          onSelect={setSelectedCycleId}
+          isLoading={isLoadingCycles || isLoadingCalculates}
+        />
+        <MonthlyBillingDetail
+          selectedCycle={selectedCycle}
+          billingData={selectedData}
+          isLoadingCalculate={isLoadingSelected}
+        />
+      </div>
       <MonthlyBillingHero
         sedeId={sedeId}
         selectedCycle={selectedCycle}
@@ -124,21 +139,6 @@ export function MonthlyBillingView({ sedeId }: MonthlyBillingViewProps) {
         maxAmount={maxAmount}
         isLoading={isLoadingCycles || isLoadingCalculates}
       />
-      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-2">
-        <MonthlyBillingChart
-          cycles={cycles}
-          amounts={amounts}
-          displayCurrency={displayCurrency}
-          selectedCycleId={selectedCycle?.id ?? null}
-          onSelect={setSelectedCycleId}
-          isLoading={isLoadingCycles || isLoadingCalculates}
-        />
-        <MonthlyBillingDetail
-          selectedCycle={selectedCycle}
-          billingData={selectedData}
-          isLoadingCalculate={isLoadingSelected}
-        />
-      </div>
     </div>
   )
 }

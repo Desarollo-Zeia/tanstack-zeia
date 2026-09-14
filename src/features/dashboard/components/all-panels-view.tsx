@@ -51,19 +51,6 @@ export function AllPanelsView({ sedeId, sedeName, dateAfterStr, dateBeforeStr }:
 
   return (
     <div className="space-y-4">
-      <AllPanelsHero
-        sedeId={sedeId}
-        sedeName={sedeName}
-        totalKwh={totalKwh}
-        dateRangeLabel={`${formatDateReadable(dateAfterStr)} → ${formatDateReadable(dateBeforeStr)}`}
-        dailyAvgKwh={dailyAvg}
-        topPanelName={topPanel?.panel.name ?? null}
-        topPanelKwh={topPanel?.mainKwh ?? null}
-        topPanelShare={topShare}
-        panelCount={panels.length}
-        pointCount={pointCount}
-        isLoading={isLoading}
-      />
       <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-2">
         <AllPanelsChart
           panels={panels}
@@ -77,6 +64,19 @@ export function AllPanelsView({ sedeId, sedeName, dateAfterStr, dateBeforeStr }:
           isLoading={isLoading}
         />
       </div>
+      <AllPanelsHero
+        sedeId={sedeId}
+        sedeName={sedeName}
+        totalKwh={totalKwh}
+        dateRangeLabel={`${formatDateReadable(dateAfterStr)} → ${formatDateReadable(dateBeforeStr)}`}
+        dailyAvgKwh={dailyAvg}
+        topPanelName={topPanel?.panel.name ?? null}
+        topPanelKwh={topPanel?.mainKwh ?? null}
+        topPanelShare={topShare}
+        panelCount={panels.length}
+        pointCount={pointCount}
+        isLoading={isLoading}
+      />
     </div>
   )
 }
