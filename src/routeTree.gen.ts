@@ -25,6 +25,7 @@ import { Route as AmbientalDashboardRoomsRouteImport } from './routes/ambiental/
 import { Route as AmbientalDashboardMonitoreoRouteImport } from './routes/ambiental/dashboard/monitoreo'
 import { Route as AmbientalDashboardAnalisisRouteImport } from './routes/ambiental/dashboard/analisis'
 import { Route as AmbientalDashboardAlertasRouteImport } from './routes/ambiental/dashboard/alertas'
+import { Route as EnergiaWaterDashboardTarifarioRouteImport } from './routes/energia/water/dashboard/tarifario'
 import { Route as EnergiaWaterDashboardPanelRouteImport } from './routes/energia/water/dashboard/panel'
 import { Route as EnergiaWaterDashboardHomeRouteImport } from './routes/energia/water/dashboard/home'
 import { Route as EnergiaWaterDashboardComparadorRouteImport } from './routes/energia/water/dashboard/comparador'
@@ -121,6 +122,12 @@ const AmbientalDashboardAlertasRoute =
     path: '/ambiental/dashboard/alertas',
     getParentRoute: () => rootRouteImport,
   } as any)
+const EnergiaWaterDashboardTarifarioRoute =
+  EnergiaWaterDashboardTarifarioRouteImport.update({
+    id: '/energia/water/dashboard/tarifario',
+    path: '/energia/water/dashboard/tarifario',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const EnergiaWaterDashboardPanelRoute =
   EnergiaWaterDashboardPanelRouteImport.update({
     id: '/energia/water/dashboard/panel',
@@ -188,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/energia/water/dashboard/comparador': typeof EnergiaWaterDashboardComparadorRoute
   '/energia/water/dashboard/home': typeof EnergiaWaterDashboardHomeRoute
   '/energia/water/dashboard/panel': typeof EnergiaWaterDashboardPanelRoute
+  '/energia/water/dashboard/tarifario': typeof EnergiaWaterDashboardTarifarioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -213,6 +221,7 @@ export interface FileRoutesByTo {
   '/energia/water/dashboard/comparador': typeof EnergiaWaterDashboardComparadorRoute
   '/energia/water/dashboard/home': typeof EnergiaWaterDashboardHomeRoute
   '/energia/water/dashboard/panel': typeof EnergiaWaterDashboardPanelRoute
+  '/energia/water/dashboard/tarifario': typeof EnergiaWaterDashboardTarifarioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/energia/water/dashboard/comparador': typeof EnergiaWaterDashboardComparadorRoute
   '/energia/water/dashboard/home': typeof EnergiaWaterDashboardHomeRoute
   '/energia/water/dashboard/panel': typeof EnergiaWaterDashboardPanelRoute
+  '/energia/water/dashboard/tarifario': typeof EnergiaWaterDashboardTarifarioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/energia/water/dashboard/comparador'
     | '/energia/water/dashboard/home'
     | '/energia/water/dashboard/panel'
+    | '/energia/water/dashboard/tarifario'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/energia/water/dashboard/comparador'
     | '/energia/water/dashboard/home'
     | '/energia/water/dashboard/panel'
+    | '/energia/water/dashboard/tarifario'
   id:
     | '__root__'
     | '/'
@@ -316,6 +328,7 @@ export interface FileRouteTypes {
     | '/energia/water/dashboard/comparador'
     | '/energia/water/dashboard/home'
     | '/energia/water/dashboard/panel'
+    | '/energia/water/dashboard/tarifario'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -338,6 +351,7 @@ export interface RootRouteChildren {
   EnergiaWaterDashboardComparadorRoute: typeof EnergiaWaterDashboardComparadorRoute
   EnergiaWaterDashboardHomeRoute: typeof EnergiaWaterDashboardHomeRoute
   EnergiaWaterDashboardPanelRoute: typeof EnergiaWaterDashboardPanelRoute
+  EnergiaWaterDashboardTarifarioRoute: typeof EnergiaWaterDashboardTarifarioRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -454,6 +468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AmbientalDashboardAlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/energia/water/dashboard/tarifario': {
+      id: '/energia/water/dashboard/tarifario'
+      path: '/energia/water/dashboard/tarifario'
+      fullPath: '/energia/water/dashboard/tarifario'
+      preLoaderRoute: typeof EnergiaWaterDashboardTarifarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/energia/water/dashboard/panel': {
       id: '/energia/water/dashboard/panel'
       path: '/energia/water/dashboard/panel'
@@ -562,6 +583,7 @@ const rootRouteChildren: RootRouteChildren = {
   EnergiaWaterDashboardComparadorRoute: EnergiaWaterDashboardComparadorRoute,
   EnergiaWaterDashboardHomeRoute: EnergiaWaterDashboardHomeRoute,
   EnergiaWaterDashboardPanelRoute: EnergiaWaterDashboardPanelRoute,
+  EnergiaWaterDashboardTarifarioRoute: EnergiaWaterDashboardTarifarioRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

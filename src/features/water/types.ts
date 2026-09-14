@@ -119,3 +119,89 @@ export interface WaterReadingsResponse {
   previous: string | null
   results: WaterReading[]
 }
+
+// Water Billing (Tarifario de Agua)
+export interface WaterBillingPermission {
+  id: number
+  code: string
+  name: string
+  billing_type: string
+  is_active: boolean
+}
+
+export interface WaterBillingConcept {
+  id: number
+  billing_permission: WaterBillingPermission
+  currency: string
+  rate: number | null
+  is_active: boolean
+  created_at: string
+  modified_at: string
+}
+
+export interface WaterBillingConceptsResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: WaterBillingConcept[]
+}
+
+export interface WaterBillingCalculateDetails {
+  consumption: number
+  unit: string
+  rate: number
+  rate_unit: string
+  // Solo alcantarillado: factor de descarga y volumen facturable
+  factor?: number
+  billed_volume?: number
+}
+
+export interface WaterBillingCalculateItem {
+  code: string
+  name: string
+  value: number
+  currency: string
+  // null cuando el concepto no tiene tarifa configurada (value = 0.0)
+  details: WaterBillingCalculateDetails | null
+}
+
+export interface WaterBillingCalculateResponse {
+  headquarter_id: number
+  start_date: string
+  end_date: string
+  results: WaterBillingCalculateItem[]
+  // null cuando los conceptos activos mezclan monedas
+  total_amount: number | null
+  currency: string | null
+  totals_by_currency: Record<string, number>
+}
+
+export interface WaterBillingCycleItem {
+  id: number
+  energy_headquarter: number
+  start_date: string
+  end_date: string
+  is_current: boolean
+  billing_type: string
+}
+
+export interface WaterBillingCyclesResponse {
+  count: number
+  results: WaterBillingCycleItem[]
+}
+
+export interface WaterCyclePipe {
+  id: number
+  name: string
+  is_main: boolean
+  measurement_points: number
+}
+
+export interface WaterConsumptionCycleDetail {
+  water_discharge_factor: number | null
+  billing_cycle_start: string | null
+  billing_cycle_end: string | null
+  ratedays: number | null
+  totalratedays: number | null
+  water_pipes: WaterCyclePipe[]
+}

@@ -567,13 +567,18 @@ interface BillingCalculateResponse {
 ## 15. Billing Cycles (Ciclos de Facturación)
 
 ```
-GET /headquarter/{headquarter_id}/billing-cycles/
+GET /headquarter/{headquarter_id}/billing-cycles/?billing_type=energy
 ```
 
 Returns the billing cycles available for a headquarter. The cycle with `is_current: true` is the active one and drives the Detalle Tarifario table; the full list feeds the period selectors in Billing Comparison.
 
+> **Note:** Since the water billing rollout, this endpoint returns both `energy` and `water` cycles unless filtered. The frontend always sends `?billing_type=energy` so the monthly view never mixes water cycles in.
+
 **Path params:**
 - `headquarter_id` (number, required)
+
+**Query params:**
+- `billing_type` (string, required by our client: `'energy'`) — filters cycles by billing type
 
 **Response:** `BillingCyclesResponse` (see `src/features/dashboard/types.ts`)
 
@@ -584,6 +589,7 @@ interface BillingCycleItem {
   start_date: string  // format YYYY-MM-DD
   end_date: string    // format YYYY-MM-DD
   is_current: boolean
+  billing_type: string  // 'energy' | 'water'
 }
 
 interface BillingCyclesResponse {

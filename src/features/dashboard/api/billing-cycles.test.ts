@@ -7,7 +7,7 @@ describe('fetchBillingCycles', () => {
     vi.restoreAllMocks()
   })
 
-  it('calls apiFetch with correct path', async () => {
+  it('calls apiFetch with billing_type=energy filter', async () => {
     const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({
       count: 0,
       results: [],
@@ -15,7 +15,7 @@ describe('fetchBillingCycles', () => {
 
     await fetchBillingCycles(67)
 
-    expect(apiFetchSpy).toHaveBeenCalledWith('/headquarter/67/billing-cycles/')
+    expect(apiFetchSpy).toHaveBeenCalledWith('/headquarter/67/billing-cycles/?billing_type=energy')
   })
 
   it('returns BillingCyclesResponse shape', async () => {
@@ -28,6 +28,7 @@ describe('fetchBillingCycles', () => {
           start_date: '2026-07-01',
           end_date: '2026-07-31',
           is_current: true,
+          billing_type: 'energy',
         },
       ],
     })
@@ -40,5 +41,6 @@ describe('fetchBillingCycles', () => {
     expect(result.results[0].start_date).toBe('2026-07-01')
     expect(result.results[0].end_date).toBe('2026-07-31')
     expect(result.results[0].is_current).toBe(true)
+    expect(result.results[0].billing_type).toBe('energy')
   })
 })

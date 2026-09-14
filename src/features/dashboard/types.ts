@@ -435,6 +435,7 @@ export interface BillingCycleItem {
   start_date: string
   end_date: string
   is_current: boolean
+  billing_type: string
 }
 
 export interface BillingCyclesResponse {
