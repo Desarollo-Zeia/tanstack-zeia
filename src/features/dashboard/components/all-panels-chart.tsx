@@ -9,12 +9,35 @@ import {
   Legend,
   type ChartData,
   type ChartOptions,
+  type Plugin,
 } from 'chart.js'
 import { BarChart3 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { PanelConsumption } from '../hooks/use-all-panels-consumption'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
+
+const valueLabelsPlugin: Plugin<'bar'> = {
+  id: 'allPanelsValueLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart
+    const meta = chart.getDatasetMeta(0)
+    const rawData = (chart.data.datasets[0]?.data ?? []) as unknown[]
+    ctx.save()
+    ctx.font = '600 11px Poppins, sans-serif'
+    ctx.fillStyle = '#64748B'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+    meta.data.forEach((bar, i) => {
+      const value = Number(rawData[i])
+      if (Number.isNaN(value)) return
+      const label = `${value.toLocaleString('es-PE', { maximumFractionDigits: 1 })} kWh`
+      const { x, y } = bar as unknown as { x: number; y: number }
+      ctx.fillText(label, x, y - 4)
+    })
+    ctx.restore()
+  },
+}
 
 interface AllPanelsChartProps {
   panels: PanelConsumption[]
@@ -61,6 +84,7 @@ export function AllPanelsChart({
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
       onClick: (_event, elements) => {
         const first = elements[0]
         if (first && panels[first.index]) {
@@ -100,6 +124,7 @@ export function AllPanelsChart({
         },
         y: {
           beginAtZero: true,
+          grace: '20%',
           grid: { color: 'rgba(136, 147, 155, 0.1)' },
           ticks: {
             color: '#88939b',
@@ -157,7 +182,7 @@ export function AllPanelsChart({
           </div>
         ) : (
           <div className="min-h-[320px] flex-1">
-            <Bar data={chartData} options={options} />
+            <Bar data={chartData} options={options} plugins={[valueLabelsPlugin]} />
           </div>
         )}
       </CardContent>

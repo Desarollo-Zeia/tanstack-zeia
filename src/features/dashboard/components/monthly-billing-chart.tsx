@@ -9,6 +9,7 @@ import {
   Legend,
   type ChartData,
   type ChartOptions,
+  type Plugin,
 } from 'chart.js'
 import { BarChart3 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +17,31 @@ import { CURRENCY_SYMBOLS, formatMoney, formatCycleRange, getCycleLabel } from '
 import type { BillingCycleItem } from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
+
+function makeValueLabelsPlugin(displayCurrency: string | null): Plugin<'bar'> {
+  return {
+    id: 'monthlyBillingValueLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart
+      const meta = chart.getDatasetMeta(0)
+      const rawData = (chart.data.datasets[0]?.data ?? []) as unknown[]
+      const symbol = displayCurrency ? (CURRENCY_SYMBOLS[displayCurrency] ?? '') : ''
+      ctx.save()
+      ctx.font = '600 11px Poppins, sans-serif'
+      ctx.fillStyle = '#64748B'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      meta.data.forEach((bar, i) => {
+        const value = Number(rawData[i])
+        if (Number.isNaN(value)) return
+        const formatted = value.toLocaleString('es-PE', { maximumFractionDigits: 0 })
+        const { x, y } = bar as unknown as { x: number; y: number }
+        ctx.fillText(`${symbol}${formatted}`, x, y - 4)
+      })
+      ctx.restore()
+    },
+  }
+}
 
 interface MonthlyBillingChartProps {
   cycles: BillingCycleItem[]
@@ -76,6 +102,7 @@ export function MonthlyBillingChart({
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
       onClick: (_event, elements) => {
         const first = elements[0]
         if (first && cycles[first.index]) {
@@ -121,6 +148,7 @@ export function MonthlyBillingChart({
         },
         y: {
           beginAtZero: true,
+          grace: '20%',
           grid: { color: 'rgba(136, 147, 155, 0.1)' },
           ticks: {
             color: '#88939b',
@@ -146,6 +174,11 @@ export function MonthlyBillingChart({
       },
     }),
     [cycles, displayCurrency, onSelect]
+  )
+
+  const valueLabelsPlugin = useMemo(
+    () => makeValueLabelsPlugin(displayCurrency),
+    [displayCurrency]
   )
 
   return (
@@ -181,7 +214,7 @@ export function MonthlyBillingChart({
           </div>
         ) : (
           <div className="min-h-[320px] flex-1">
-            <Bar data={chartData} options={options} />
+            <Bar data={chartData} options={options} plugins={[valueLabelsPlugin]} />
           </div>
         )}
       </CardContent>

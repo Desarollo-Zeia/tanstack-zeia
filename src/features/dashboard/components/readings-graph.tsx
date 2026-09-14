@@ -214,6 +214,37 @@ export function ReadingsGraph({
     },
   }), [upperThreshold, lowerThreshold, thresholdUnit])
 
+  // Valor con unidad encima de cada barra (solo modo barras). Si hay muchos
+  // puntos, se muestrea para no saturar la gráfica.
+  const barValueLabelsPlugin = useMemo<Plugin<'bar'>>(() => ({
+    id: 'readingsBarValueLabels',
+    afterDatasetsDraw: (chart) => {
+      const { ctx, chartArea } = chart
+      if (!chartArea) return
+      const meta = chart.getDatasetMeta(0)
+      const rawData = (chart.data.datasets[0]?.data ?? []) as unknown[]
+      const count = meta.data.length
+      if (count === 0) return
+      const step = Math.max(1, Math.ceil(count / 24))
+      const suffix = thresholdUnit && thresholdUnit !== '-' ? ` ${thresholdUnit}` : ''
+      ctx.save()
+      ctx.font = '600 11px Poppins, sans-serif'
+      ctx.fillStyle = '#64748B'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      meta.data.forEach((bar, i) => {
+        if (i % step !== 0) return
+        const value = Number(rawData[i])
+        if (Number.isNaN(value)) return
+        const { x, y } = bar as unknown as { x: number; y: number }
+        if (x < chartArea.left || x > chartArea.right) return
+        const label = `${value.toLocaleString('es-PE', { maximumFractionDigits: 2 })}${suffix}`
+        ctx.fillText(label, x, y - 4)
+      })
+      ctx.restore()
+    },
+  }), [thresholdUnit])
+
   const chartData = useMemo(() => {
     const results = data ?? []
 
@@ -287,6 +318,7 @@ export function ReadingsGraph({
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: chartType === 'bar' ? 24 : 8 } },
       interaction: {
         mode: 'index' as const,
         intersect: false,
@@ -355,6 +387,7 @@ export function ReadingsGraph({
           },
         },
         y: {
+          ...(chartType === 'bar' ? { grace: '20%' } : {}),
           title: {
             display: true,
             text: yAxisLabel,
@@ -373,7 +406,7 @@ export function ReadingsGraph({
         },
       },
     }),
-    [data, activeIndicator, lastBy, unit, yAxisLabel]
+    [data, activeIndicator, lastBy, unit, yAxisLabel, chartType]
   )
 
   const selectOptions = indicatorOptions.map((ind) => {
@@ -488,7 +521,10 @@ export function ReadingsGraph({
                 ref={barChartRef}
                 data={chartData as ChartData<'bar'>}
                 options={options as ChartOptions<'bar'>}
-                plugins={[thresholdLabelsPlugin as unknown as Plugin<'bar'>]}
+                plugins={[
+                  thresholdLabelsPlugin as unknown as Plugin<'bar'>,
+                  barValueLabelsPlugin,
+                ]}
               />
             )}
           </div>
