@@ -8,6 +8,8 @@ const RESOURCE_STORAGE_KEY = 'zeia-resource'
 interface AuthState {
   token: string
   user: User
+  // Flag por usuario del login (ausente en sesiones antiguas = sin acceso).
+  maxdemand: boolean
 }
 
 function getStoredAuth(): AuthState | null {
@@ -34,6 +36,7 @@ export function useAuth() {
     const state: AuthState = {
       token: data.token,
       user: data.user,
+      maxdemand: data.maxdemand ?? false,
     }
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
     setAuthState(state)
@@ -49,6 +52,7 @@ export function useAuth() {
   return {
     token: auth?.token ?? null,
     user: auth?.user ?? null,
+    maxdemand: auth?.maxdemand ?? false,
     isAuthenticated: !!auth?.token,
     setAuth,
     logout,

@@ -26,6 +26,9 @@ Authenticates a user with email and password. Returns a token and full user prof
 ```typescript
 interface AuthResponse {
   token: string
+  // Flag por usuario: solo cuando es true se muestra el botón de
+  // Máxima Demanda Nacional. Ausente = sin acceso.
+  maxdemand?: boolean
   user: {
     id: number
     email: string
@@ -38,6 +41,7 @@ interface AuthResponse {
       name: string
       url: string | null
       icon: string          // base64 SVG
+      monitoring_type?: string  // e.g. "energy"
       is_active: boolean
       children: Array<{
         name: string

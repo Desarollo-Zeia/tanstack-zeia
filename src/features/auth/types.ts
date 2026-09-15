@@ -14,6 +14,9 @@ export interface EnergyModule {
   name: string
   url: string | null
   icon: string
+  // El backend envía "energy" en los módulos de energía (igual que "water"
+  // en los de agua). Opcional por compatibilidad con respuestas antiguas.
+  monitoring_type?: 'energy' | string
   is_active: boolean
   children: EnergyModuleChild[]
 }
@@ -44,6 +47,9 @@ export interface User {
 export interface AuthResponse {
   token: string
   user: User
+  // Flag por usuario que controla la visibilidad del botón de
+  // Máxima Demanda Nacional. Opcional: ausente = sin acceso.
+  maxdemand?: boolean
 }
 
 export interface LoginCredentials {
