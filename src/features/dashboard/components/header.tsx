@@ -8,7 +8,7 @@ import { ResourceSwitcher } from './resource-switcher'
 
 
 export function DashboardHeader() {
-  const { logout } = useAuth()
+  const { logout, maxdemand } = useAuth()
   const { resource } = useResource()
   const router = useRouter()
 
@@ -44,8 +44,9 @@ export function DashboardHeader() {
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button> */}
 
-        {/* Peak power notice (solo energía: el concepto no aplica a agua) */}
-        {resource === 'energy' && <PeakPowerNotice />}
+        {/* Peak power notice (solo energía: el concepto no aplica a agua;
+            y solo si el usuario tiene maxdemand en true) */}
+        {resource === 'energy' && maxdemand && <PeakPowerNotice />}
 
         {/* Logout */}
         <button

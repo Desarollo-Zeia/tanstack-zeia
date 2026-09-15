@@ -91,6 +91,46 @@ describe('useAuth', () => {
     expect(stored.user.email).toBe('new@zeia.com.pe')
   })
 
+  it('should persist and expose maxdemand from the login response', () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper })
+
+    act(() => {
+      result.current.setAuth({
+        token: 'max-token',
+        maxdemand: true,
+        user: {
+          id: 3,
+          email: 'max@zeia.com.pe',
+          first_name: 'Max',
+          last_name: 'User',
+          companies: [],
+          is_user_energy_monitoring: true,
+          is_user_water_monitoring: false,
+          energy_modules: [],
+          water_modules: [],
+          is_user_quality_air_auto: false,
+          is_user_thermal_comfort: false,
+        },
+      })
+    })
+
+    expect(result.current.maxdemand).toBe(true)
+
+    const stored = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}')
+    expect(stored.maxdemand).toBe(true)
+  })
+
+  it('should default maxdemand to false when the response has no flag (old sessions)', () => {
+    localStorage.setItem(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({ token: 'abc', user: { id: 1 } })
+    )
+
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper })
+
+    expect(result.current.maxdemand).toBe(false)
+  })
+
   it('should logout and clear localStorage', () => {
     localStorage.setItem(
       AUTH_STORAGE_KEY,
