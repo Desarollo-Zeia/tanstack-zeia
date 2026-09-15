@@ -72,7 +72,7 @@ export function PanelReadingsChart({
   const chartData: ChartData<'bar'> = useMemo(() => {
     const results = data ?? []
     return {
-      labels: results.map((r) => formatDateReadable(r.first_reading)),
+      labels: results.map((r) => formatDateReadable(r.period)),
       datasets: [
         {
           label: param?.parameter ?? indicador,
@@ -112,7 +112,7 @@ export function PanelReadingsChart({
               const results = data ?? []
               const rawIndex = item?.dataIndex ?? 0
               const raw = results[rawIndex]
-              return raw ? formatDateReadable(raw.first_reading) : ''
+              return raw ? formatDateReadable(raw.period) : ''
             },
             label: (context: TooltipItem<'bar'>) => {
               const value = context.raw as number
