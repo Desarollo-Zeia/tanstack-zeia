@@ -146,7 +146,7 @@ describe('MonthlyBillingView', () => {
       expect(screen.getByText('Desglose — Julio 2026')).toBeInTheDocument()
     })
 
-    const juneButton = screen.getByRole('button', { name: /Jun 26/i })
+    const juneButton = screen.getByRole('button', { name: 'Jun' })
     await user.click(juneButton)
 
     await waitFor(() => {

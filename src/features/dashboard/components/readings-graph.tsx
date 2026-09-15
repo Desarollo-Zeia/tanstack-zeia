@@ -20,7 +20,11 @@ import { Activity, BarChart3, Clock, LineChart, ZoomOut } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ZeiaSelect } from '@/components/ui/select'
 import { fetchReadingsGraph } from '@/features/dashboard/api/readings-graph'
-import { formatDateISO, formatDateShort, formatDateTimeShort } from '@/lib/date-utils'
+import { formatDateISO } from '@/lib/date-utils'
+import {
+  formatReadingsAxisLabel,
+  formatReadingsTooltipTitle,
+} from '@/features/dashboard/lib/readings-graph-labels'
 import { getElectricParameter } from '@/lib/electric-parameters'
 import type { Category } from '@/features/dashboard/hooks/use-home-filters'
 import type { MeasurementPointThresholds } from '@/features/dashboard/types'
@@ -64,43 +68,6 @@ interface ReadingsGraphProps {
 
 function formatThresholdValue(value: number): string {
   return value.toLocaleString('es-PE', { maximumFractionDigits: 2 })
-}
-
-function formatTimeLabel(isoString: string, lastBy: LastBy): string {
-  const date = new Date(isoString)
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-
-  switch (lastBy) {
-    case 'minute':
-    case '15min':
-    case '30min':
-    case 'hour':
-      return `${hours}:${minutes}`
-    case 'day':
-    case 'week':
-      return formatDateShort(isoString)
-    case 'month':
-      return formatDateShort(isoString)
-    default:
-      return `${hours}:${minutes}`
-  }
-}
-
-function formatTooltipTitle(isoString: string, lastBy: LastBy): string {
-  switch (lastBy) {
-    case 'minute':
-    case '15min':
-    case '30min':
-    case 'hour':
-      return formatDateTimeShort(isoString)
-    case 'day':
-    case 'week':
-    case 'month':
-      return formatDateShort(isoString)
-    default:
-      return formatDateTimeShort(isoString)
-  }
 }
 
 export function ReadingsGraph({
@@ -303,7 +270,7 @@ export function ReadingsGraph({
     }
 
     return {
-      labels: results.map((r) => formatTimeLabel(r.first_reading, lastBy)),
+      labels: results.map((r) => formatReadingsAxisLabel(r, lastBy)),
       datasets: [mainDataset, ...thresholdDatasets],
     }
   }, [data, activeIndicator, lastBy, chartType, isEnergyCategory, thresholdRange, upperThreshold, lowerThreshold, thresholdUnit])
@@ -339,7 +306,7 @@ export function ReadingsGraph({
               const results = data ?? []
               const rawIndex = item?.dataIndex ?? 0
               const raw = results[rawIndex]
-              return raw ? formatTooltipTitle(raw.first_reading, lastBy) : ''
+              return raw ? formatReadingsTooltipTitle(raw, lastBy) : ''
             },
             label: (context: TooltipItem<'line'>) => {
               const value = context.raw as number
