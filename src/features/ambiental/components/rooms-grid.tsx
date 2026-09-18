@@ -1,10 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { DoorOpen, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  DoorOpen,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Battery,
+  BatteryLow,
+  BatteryMedium,
+  BatteryFull,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useRoomsFilters } from '../hooks/use-rooms-filters'
 import { fetchOcupacionalRooms } from '../api/rooms'
-import type { Room } from '../types'
+import type { Room, RoomDevice } from '../types'
 
 interface StatusHeaderStyle {
   label: string
@@ -54,9 +63,101 @@ interface RoomCardProps {
   room: Room
 }
 
+function getBatteryLevel(battery: number | null): 'high' | 'medium' | 'low' | 'unknown' {
+  if (battery === null || Number.isNaN(battery)) return 'unknown'
+  if (battery < 20) return 'low'
+  if (battery < 50) return 'medium'
+  return 'high'
+}
+
+function getBatteryBarClass(level: ReturnType<typeof getBatteryLevel>): string {
+  switch (level) {
+    case 'high':
+      return 'bg-success'
+    case 'medium':
+      return 'bg-warning'
+    case 'low':
+      return 'bg-danger'
+    default:
+      return 'bg-muted'
+  }
+}
+
+function getBatteryTextClass(level: ReturnType<typeof getBatteryLevel>): string {
+  switch (level) {
+    case 'high':
+      return 'text-success'
+    case 'medium':
+      return 'text-warning'
+    case 'low':
+      return 'text-danger'
+    default:
+      return 'text-text-muted'
+  }
+}
+
+function DeviceBatteryRow({ device }: { device: RoomDevice }) {
+  const level = getBatteryLevel(device.battery)
+  const BatteryIcon =
+    level === 'high'
+      ? BatteryFull
+      : level === 'medium'
+        ? BatteryMedium
+        : level === 'low'
+          ? BatteryLow
+          : Battery
+  const clamped = device.battery === null ? 0 : Math.min(100, Math.max(0, Math.round(device.battery)))
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-background/50 px-3 py-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-secondary text-text-secondary truncate max-w-[60%]"
+          title={device.type_sensor}
+        >
+          {device.type_sensor}
+        </span>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 text-xs font-mono font-semibold shrink-0',
+            getBatteryTextClass(level)
+          )}
+        >
+          <BatteryIcon className="w-4 h-4" />
+          {device.battery === null ? 'Sin datos' : `${clamped}%`}
+        </span>
+      </div>
+      <div
+        className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
+        role="progressbar"
+        aria-valuenow={device.battery ?? undefined}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Batería del dispositivo ${device.type_sensor}`}
+      >
+        <div
+          className={cn(
+            'h-full rounded-full transition-all duration-500',
+            getBatteryBarClass(level)
+          )}
+          style={{ width: `${clamped}%` }}
+        />
+      </div>
+      {device.dev_eui && (
+        <p
+          className="font-mono text-[11px] text-text-muted truncate"
+          title={device.dev_eui}
+        >
+          {device.dev_eui}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function RoomCard({ room }: RoomCardProps) {
   const status = getStatusHeaderStyle(room.status)
-  const firstDevice = room.devices[0]
+  const devices = room.devices ?? []
   const isConnected = room.connection_status === 'connected'
   const headerBg = isConnected ? status.bg : 'bg-gray-400 dark:bg-gray-600'
   const headerText = isConnected ? status.text : 'text-white'
@@ -130,18 +231,16 @@ function RoomCard({ room }: RoomCardProps) {
             className="label-executive mb-1.5"
             style={{ color: '#88939b' }}
           >
-            Dispositivo
+            {devices.length === 1 ? 'Dispositivo' : `Dispositivos (${devices.length})`}
           </p>
-          <p
-            className="font-mono text-sm text-text-primary font-semibold tracking-wide truncate"
-            title={firstDevice?.dev_eui ?? ''}
-          >
-            {firstDevice?.dev_eui ?? '—'}
-          </p>
-          {firstDevice?.type_sensor && (
-            <span className="inline-flex items-center px-2 py-0.5 mt-2 rounded text-[10px] font-mono font-medium bg-secondary text-text-secondary">
-              {firstDevice.type_sensor}
-            </span>
+          {devices.length === 0 ? (
+            <p className="text-sm text-text-muted">Sin dispositivos</p>
+          ) : (
+            <div className="space-y-2">
+              {devices.map((device) => (
+                <DeviceBatteryRow key={device.id} device={device} />
+              ))}
+            </div>
           )}
         </div>
       </div>

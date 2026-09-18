@@ -33,9 +33,10 @@ export interface HeadquartersResponse {
 
 export interface RoomDevice {
   id: number
-  dev_eui: string
+  battery: number | null
   type_sensor: string
-  no_data_status?: string
+  no_data_status: string
+  dev_eui?: string
 }
 
 export interface Room {
