@@ -36,9 +36,9 @@ const TYPE_CONFIG: Record<UnbalancedType, TypeConfig> = {
     description: 'Eventos de desbalance de corriente por fase',
     unit: 'A',
     phases: [
-      { key: 'Ia', label: 'Fase A' },
-      { key: 'Ib', label: 'Fase B' },
-      { key: 'Ic', label: 'Fase C' },
+      { key: 'Ia', label: 'Fase R' },
+      { key: 'Ib', label: 'Fase S' },
+      { key: 'Ic', label: 'Fase T' },
     ],
     fetchFn: fetchCurrentImbalanced,
   },
