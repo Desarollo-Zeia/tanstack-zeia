@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   DoorOpen,
@@ -12,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useRoomsFilters } from '../hooks/use-rooms-filters'
-import { fetchOcupacionalRooms } from '../api/rooms'
+import { fetchAllOcupacionalRooms } from '../api/rooms'
 import type { Room, RoomDevice } from '../types'
 
 interface StatusHeaderStyle {
@@ -24,7 +25,9 @@ interface StatusHeaderStyle {
 const STATUS_HEADER_STYLES: Record<string, StatusHeaderStyle> = {
   GOOD: { label: 'Bueno', bg: 'bg-success', text: 'text-white' },
   HUMIDITY_MAX: { label: 'Humedad Máx.', bg: 'bg-warning', text: 'text-white' },
+  HUMIDITY_MIN: { label: 'Humedad Mín.', bg: 'bg-warning', text: 'text-white' },
   TEMP_MAX: { label: 'Temp. Máx.', bg: 'bg-warning', text: 'text-white' },
+  TEMP_MIN: { label: 'Temp. Mín.', bg: 'bg-warning', text: 'text-white' },
   CO2_MAX: { label: 'CO₂ Máx.', bg: 'bg-warning', text: 'text-white' },
   OFFLINE: { label: 'Desconectado', bg: 'bg-danger', text: 'text-white' },
   DISABLED: { label: 'Deshabilitado', bg: 'bg-muted', text: 'text-text-primary' },
@@ -32,7 +35,7 @@ const STATUS_HEADER_STYLES: Record<string, StatusHeaderStyle> = {
 
 function getStatusHeaderStyle(status: string): StatusHeaderStyle {
   return (
-    STATUS_HEADER_STYLES[status] ?? {
+    STATUS_HEADER_STYLES[status.toUpperCase()] ?? {
       label: status,
       bg: 'bg-muted',
       text: 'text-text-primary',
@@ -68,6 +71,15 @@ function getBatteryLevel(battery: number | null): 'high' | 'medium' | 'low' | 'u
   if (battery < 20) return 'low'
   if (battery < 50) return 'medium'
   return 'high'
+}
+
+function getRoomBattery(room: Room): number | null {
+  const values = (room.devices ?? [])
+    .map((device) => device.battery)
+    .filter((battery): battery is number => battery !== null && !Number.isNaN(battery))
+
+  if (values.length === 0) return null
+  return Math.min(...values)
 }
 
 function getBatteryBarClass(level: ReturnType<typeof getBatteryLevel>): string {
@@ -252,16 +264,29 @@ export function RoomsGrid() {
   const { sedeId, page, pageSize, offset, setPage, isReady } = useRoomsFilters()
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['ocupacional-rooms', sedeId, page, pageSize],
-    queryFn: () => fetchOcupacionalRooms({ limit: pageSize, offset }),
+    queryKey: ['ocupacional-rooms', sedeId],
+    queryFn: fetchAllOcupacionalRooms,
     enabled: isReady,
   })
 
-  const rooms = data?.results ?? []
-  const totalCount = data?.count ?? 0
+  const rooms = useMemo(() => {
+    const sorted = [...(data ?? [])]
+    sorted.sort((a, b) => {
+      const batteryA = getRoomBattery(a)
+      const batteryB = getRoomBattery(b)
+      if (batteryA === null && batteryB === null) return 0
+      if (batteryA === null) return 1
+      if (batteryB === null) return -1
+      return batteryA - batteryB
+    })
+    return sorted
+  }, [data])
+
+  const totalCount = rooms.length
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
-  const hasPrev = data?.previous !== null && data?.previous !== undefined
-  const hasNext = data?.next !== null && data?.next !== undefined
+  const pageRooms = rooms.slice(offset, offset + pageSize)
+  const hasPrev = page > 1
+  const hasNext = page < totalPages
 
   return (
     <div className="space-y-4">
@@ -294,7 +319,7 @@ export function RoomsGrid() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {rooms.map((room) => (
+            {pageRooms.map((room) => (
               <RoomCard key={room.id} room={room} />
             ))}
           </div>
