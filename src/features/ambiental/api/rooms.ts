@@ -1,7 +1,9 @@
 import { apiOcupacionalFetch } from '@/lib/ocupacional-api-client'
-import type { RoomsResponse } from '../types'
+import type { Room, RoomsResponse } from '../types'
 
 export const ROOMS_PAGE_SIZE = 10
+
+const ROOMS_FETCH_CHUNK = 100
 
 export interface FetchOcupacionalRoomsParams {
   limit: number
@@ -18,4 +20,25 @@ export function fetchOcupacionalRooms(
   return apiOcupacionalFetch<RoomsResponse>(
     `/enterprise/api/enterprise/room-list/?${searchParams.toString()}`
   )
+}
+
+export async function fetchAllOcupacionalRooms(): Promise<Room[]> {
+  const all: Room[] = []
+  let offset = 0
+  let total = Number.POSITIVE_INFINITY
+
+  while (all.length < total) {
+    const response = await fetchOcupacionalRooms({
+      limit: ROOMS_FETCH_CHUNK,
+      offset,
+    })
+
+    total = response.count
+    if (response.results.length === 0) break
+
+    all.push(...response.results)
+    offset += response.results.length
+  }
+
+  return all
 }
