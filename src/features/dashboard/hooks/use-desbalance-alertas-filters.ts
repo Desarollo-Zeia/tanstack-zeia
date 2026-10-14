@@ -140,10 +140,14 @@ export function useDesbalanceAlertasFilters() {
 
   const setSedeId = useCallback(
     (id: number) => {
+      // Al cambiar de sede se auto-selecciona el primer panel activo;
+      // el punto de monitoreo se auto-selecciona al cambiar el panel.
+      const targetHeadquarter = headquarters.find((h) => h.id === id)
+      const firstPanelId = targetHeadquarter?.electrical_panels.find((p) => p.is_active)?.id
       navigate({
         search: {
           sede: String(id),
-          panel: undefined,
+          panel: firstPanelId ? String(firstPanelId) : undefined,
           punto: undefined,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
@@ -151,7 +155,7 @@ export function useDesbalanceAlertasFilters() {
         ...NO_SCROLL,
       })
     },
-    [navigate, dateAfter, dateBefore, today]
+    [navigate, headquarters, dateAfter, dateBefore, today]
   )
 
   const setPanelId = useCallback(

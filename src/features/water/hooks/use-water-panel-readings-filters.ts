@@ -140,6 +140,10 @@ export function useWaterPanelReadingsFilters() {
 
   const setSedeId = useCallback(
     (id: number) => {
+      // Al cambiar de sede se auto-selecciona la primera tubería activa;
+      // el punto se deriva del primer punto activo de la tubería.
+      const targetHeadquarter = headquarters.find((h) => h.id === id)
+      const firstPipeId = targetHeadquarter?.water_pipes.find((p) => p.is_active)?.id
       navigate({
         search: {
           sede: search.sede,
@@ -147,7 +151,7 @@ export function useWaterPanelReadingsFilters() {
           desde: search.desde,
           hasta: search.hasta,
           wmp_sede: String(id),
-          wmp_tuberia: undefined,
+          wmp_tuberia: firstPipeId ? String(firstPipeId) : undefined,
           wmp_punto: undefined,
           wmp_indicador: indicador,
           wmp_weekday: weekday,
@@ -157,7 +161,7 @@ export function useWaterPanelReadingsFilters() {
         ...NO_SCROLL,
       })
     },
-    [navigate, search.sede, search.tuberia, search.desde, search.hasta, indicador, weekday, anio, mes]
+    [navigate, headquarters, search.sede, search.tuberia, search.desde, search.hasta, indicador, weekday, anio, mes]
   )
 
   const setTuberiaId = useCallback(

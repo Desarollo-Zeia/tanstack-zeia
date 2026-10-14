@@ -197,10 +197,14 @@ export function useHomeFilters() {
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(
     (id: number) => {
+      // Al cambiar de sede se auto-selecciona el primer panel activo;
+      // el punto de monitoreo se auto-selecciona al cambiar el panel.
+      const targetHeadquarter = headquarters.find((h) => h.id === id)
+      const firstPanelId = targetHeadquarter?.electrical_panels.find((p) => p.is_active)?.id
       navigate({
         search: {
           sede: String(id),
-          panel: undefined,
+          panel: firstPanelId ? String(firstPanelId) : undefined,
           punto: undefined,
           categoria: category ?? 'power',
           pagina: undefined,
@@ -209,7 +213,7 @@ export function useHomeFilters() {
         },
       })
     },
-    [navigate, category, dateAfter, dateBefore, today]
+    [navigate, headquarters, category, dateAfter, dateBefore, today]
   )
 
   const setPanelId = useCallback(

@@ -167,10 +167,14 @@ export function useWaterHomeFilters() {
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(
     (id: number) => {
+      // Al cambiar de sede se auto-selecciona la primera tubería activa;
+      // el punto se deriva del primer punto activo de la tubería.
+      const targetHeadquarter = headquarters.find((h) => h.id === id)
+      const firstPipeId = targetHeadquarter?.water_pipes.find((p) => p.is_active)?.id
       navigate({
         search: {
           sede: String(id),
-          tuberia: undefined, // Reset pipe when sede changes
+          tuberia: firstPipeId ? String(firstPipeId) : undefined,
           punto: undefined, // Reset point when sede changes
           indicador,
           agrupacion,
@@ -182,7 +186,7 @@ export function useWaterHomeFilters() {
         hashScrollIntoView: false,
       })
     },
-    [navigate, indicador, agrupacion, dateAfter, dateBefore, today]
+    [navigate, headquarters, indicador, agrupacion, dateAfter, dateBefore, today]
   )
 
   const setTuberiaId = useCallback(
