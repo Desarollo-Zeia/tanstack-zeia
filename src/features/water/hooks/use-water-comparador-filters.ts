@@ -140,10 +140,14 @@ export function useWaterComparadorFilters() {
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(
     (id: number) => {
+      // Al cambiar de sede se auto-selecciona la primera tubería activa;
+      // el punto se deriva del primer punto activo de la tubería.
+      const targetHeadquarter = headquarters.find((h) => h.id === id)
+      const firstPipeId = targetHeadquarter?.water_pipes.find((p) => p.is_active)?.id
       navigate({
         search: {
           sede: String(id),
-          tuberia: undefined, // Reset pipe when sede changes
+          tuberia: firstPipeId ? String(firstPipeId) : undefined,
           punto: undefined, // Reset point when sede changes
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
@@ -152,7 +156,7 @@ export function useWaterComparadorFilters() {
         hashScrollIntoView: false,
       })
     },
-    [navigate, dateAfter, dateBefore, today]
+    [navigate, headquarters, dateAfter, dateBefore, today]
   )
 
   const setTuberiaId = useCallback(

@@ -121,7 +121,7 @@ describe('useDashboardFilters', () => {
     })
   })
 
-  it('resets panel and navigates when sede changes', async () => {
+  it('auto-selects first panel of the new sede when sede changes', async () => {
     mockSearch = {
       sede: '67',
       panel: '34',
@@ -134,7 +134,7 @@ describe('useDashboardFilters', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.sedeId).toBe(67)
+      expect(result.current.headquarters.length).toBe(2)
     })
 
     result.current.setSedeId(68)
@@ -144,7 +144,7 @@ describe('useDashboardFilters', () => {
         expect.objectContaining({
           search: expect.objectContaining({
             sede: '68',
-            panel: undefined,
+            panel: '40',
           }),
         })
       )

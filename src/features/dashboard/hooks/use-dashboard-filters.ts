@@ -118,10 +118,13 @@ export function useDashboardFilters() {
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(
     (id: number) => {
+      // Al cambiar de sede se auto-selecciona el primer panel activo.
+      const targetHeadquarter = headquarters.find((h) => h.id === id)
+      const firstPanelId = targetHeadquarter?.electrical_panels.find((p) => p.is_active)?.id
       navigate({
         search: {
           sede: String(id),
-          panel: undefined, // Reset panel when sede changes
+          panel: firstPanelId ? String(firstPanelId) : undefined,
           vista: search.vista,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
@@ -137,7 +140,7 @@ export function useDashboardFilters() {
         hashScrollIntoView: false,
       })
     },
-    [navigate, dateAfter, dateBefore, today, search.vista, search.mp_sede, search.mp_panel, search.mp_punto, search.mp_indicador, search.mp_weekday, search.mp_anio, search.mp_mes]
+    [navigate, headquarters, dateAfter, dateBefore, today, search.vista, search.mp_sede, search.mp_panel, search.mp_punto, search.mp_indicador, search.mp_weekday, search.mp_anio, search.mp_mes]
   )
 
   const setPanelId = useCallback(

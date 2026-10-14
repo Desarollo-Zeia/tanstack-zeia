@@ -115,10 +115,13 @@ export function useWaterFilters() {
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(
     (id: number) => {
+      // Al cambiar de sede se auto-selecciona la primera tubería activa.
+      const targetHeadquarter = headquarters.find((h) => h.id === id)
+      const firstPipeId = targetHeadquarter?.water_pipes.find((p) => p.is_active)?.id
       navigate({
         search: {
           sede: String(id),
-          tuberia: undefined, // Reset pipe when sede changes
+          tuberia: firstPipeId ? String(firstPipeId) : undefined,
           desde: formatDateISO(dateAfter ?? today),
           hasta: formatDateISO(dateBefore ?? today),
           wmp_sede: search.wmp_sede,
@@ -135,6 +138,7 @@ export function useWaterFilters() {
     },
     [
       navigate,
+      headquarters,
       dateAfter,
       dateBefore,
       today,
