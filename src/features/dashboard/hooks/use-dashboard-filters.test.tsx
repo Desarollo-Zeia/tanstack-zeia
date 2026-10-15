@@ -194,4 +194,61 @@ describe('useDashboardFilters', () => {
     await new Promise((resolve) => setTimeout(resolve, 100))
     expect(mockNavigate).toHaveBeenCalledTimes(1)
   })
+
+  it('restores the persisted sede and panel when URL is empty', async () => {
+    localStorage.setItem(
+      'zeia-filter-selection',
+      JSON.stringify({ energy: { sede: 68, panel: 40 } })
+    )
+    mockSearch = {}
+
+    renderHook(() => useDashboardFilters(), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search: expect.objectContaining({ sede: '68', panel: '40' }),
+        })
+      )
+    })
+  })
+
+  it('ignores a persisted sede that is not in the current user headquarters', async () => {
+    localStorage.setItem(
+      'zeia-filter-selection',
+      JSON.stringify({ energy: { sede: 9999, panel: 1 } })
+    )
+    mockSearch = {}
+
+    renderHook(() => useDashboardFilters(), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalled()
+    })
+
+    const lastCall = mockNavigate.mock.calls[mockNavigate.mock.calls.length - 1]
+    expect(lastCall[0].search).toMatchObject({ sede: '67', panel: '39' })
+  })
+
+  it('persists the effective selection so other modules can restore it', async () => {
+    mockSearch = {
+      sede: '68',
+      panel: '40',
+      desde: '2026-05-01',
+      hasta: '2026-05-10',
+    }
+
+    renderHook(() => useDashboardFilters(), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('zeia-filter-selection') || '{}')
+      expect(stored.energy).toMatchObject({ sede: 68, panel: 40 })
+    })
+  })
 })

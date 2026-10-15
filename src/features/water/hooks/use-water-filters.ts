@@ -3,6 +3,8 @@ import { useSearch, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchWaterHeadquarters } from '../api/water-headquarters'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
+import { getPersistedFilterId } from '@/lib/filter-persistence'
+import { usePersistFilterSelection } from '@/hooks/use-persist-filter-selection'
 
 export function useWaterFilters() {
   const navigate = useNavigate({ from: '/energia/water/dashboard/panel' })
@@ -51,10 +53,11 @@ export function useWaterFilters() {
 
     const firstActiveSede = headquarters.find((h) => h.is_active) ?? headquarters[0]
     // Ignora la sede de la URL si no pertenece al usuario actual (sesión anterior).
+    // Si la URL no trae sede, restaura la última selección y cae a la primera activa.
     const targetSedeId =
       sedeId != null && headquarters.some((h) => h.id === sedeId)
         ? sedeId
-        : (firstActiveSede?.id ?? null)
+        : (getPersistedFilterId('water', 'sede', headquarters) ?? firstActiveSede?.id ?? null)
 
     if (!targetSedeId) return
 
@@ -64,7 +67,7 @@ export function useWaterFilters() {
     const targetTuberiaId =
       tuberiaId != null && availablePipes.some((p) => p.id === tuberiaId)
         ? tuberiaId
-        : (availablePipes[0]?.id ?? null)
+        : (getPersistedFilterId('water', 'tuberia', availablePipes) ?? availablePipes[0]?.id ?? null)
 
     const targetDateAfter = dateAfter ?? today
     const targetDateBefore = dateBefore ?? today
@@ -111,6 +114,12 @@ export function useWaterFilters() {
     search.wmp_anio,
     search.wmp_mes,
   ])
+
+  // Persiste la selección efectiva para restaurarla al navegar entre módulos.
+  usePersistFilterSelection('water', {
+    sede: { value: sedeId, candidates: headquarters },
+    tuberia: { value: tuberiaId, candidates: pipes },
+  })
 
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(

@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchHeadquarters } from '../api/headquarters'
 import { fetchDeviceMeasurementPointsList } from '../api/measurement-points'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
+import { getPersistedFilterId } from '@/lib/filter-persistence'
+import { usePersistFilterSelection } from '@/hooks/use-persist-filter-selection'
 
 export type HistoryIndicator = 'energy' | 'voltage-fluctuation' | 'power-demand' | 'current-monitoring' | 'harmonic-distortion'
 
@@ -84,10 +86,11 @@ export function useAlertsHistoryFilters() {
 
     const firstActiveSede = headquarters.find((h) => h.is_active) ?? headquarters[0]
     // Ignora la sede de la URL si no pertenece al usuario actual (sesión anterior).
+    // Si la URL no trae sede, restaura la última selección y cae a la primera activa.
     const targetSedeId =
       sedeId != null && headquarters.some((h) => h.id === sedeId)
         ? sedeId
-        : (firstActiveSede?.id ?? null)
+        : (getPersistedFilterId('energy', 'sede', headquarters) ?? firstActiveSede?.id ?? null)
 
     if (!targetSedeId) return
 
@@ -97,7 +100,7 @@ export function useAlertsHistoryFilters() {
     const targetPanelId =
       panelId != null && availablePanels.some((p) => p.id === panelId)
         ? panelId
-        : (availablePanels[0]?.id ?? null)
+        : (getPersistedFilterId('energy', 'panel', availablePanels) ?? availablePanels[0]?.id ?? null)
 
     const targetDateAfter = dateAfter ?? today
     const targetDateBefore = dateBefore ?? today
@@ -160,7 +163,10 @@ export function useAlertsHistoryFilters() {
       search: {
         sede: String(sedeId),
         panel: String(panelId),
-        punto: String(measurementPoints[0].id),
+        // Restaura el último punto seleccionado y cae al primero disponible.
+        punto: String(
+          getPersistedFilterId('energy', 'punto', measurementPoints) ?? measurementPoints[0].id
+        ),
         desde: formatDateISO(dateAfter ?? today),
         hasta: formatDateISO(dateBefore ?? today),
         pagina: '1',
@@ -171,6 +177,13 @@ export function useAlertsHistoryFilters() {
       },
     })
   }, [measurementPoints, puntoId, panelId, sedeId, dateAfter, dateBefore, today, navigate, subtype, category, indicator, phase])
+
+  // Persiste la selección efectiva para restaurarla al navegar entre módulos.
+  usePersistFilterSelection('energy', {
+    sede: { value: sedeId, candidates: headquarters },
+    panel: { value: panelId, candidates: panels },
+    punto: { value: puntoId, candidates: measurementPoints },
+  })
 
   const setSedeId = (id: number) => {
     // Al cambiar de sede se auto-selecciona el primer panel activo;

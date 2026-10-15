@@ -25,6 +25,7 @@ vi.mock('../api/water-headquarters', () => ({
         water_pipes: [
           { id: 1, name: 'Tubería Matriz Edificio A', is_active: true, is_main: true },
           { id: 2, name: 'Tubería Baños', is_active: false, is_main: false },
+          { id: 3, name: 'Tubería Riego', is_active: true, is_main: false },
         ],
       },
     ],
@@ -104,6 +105,37 @@ describe('useWaterFilters', () => {
           }),
         })
       )
+    })
+  })
+
+  it('restores the persisted sede and pipe when URL is empty', async () => {
+    localStorage.setItem(
+      'zeia-filter-selection',
+      JSON.stringify({ water: { sede: 199, tuberia: 3 } })
+    )
+
+    renderHook(() => useWaterFilters(), { wrapper: createWrapper() })
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search: expect.objectContaining({ sede: '199', tuberia: '3' }),
+        })
+      )
+    })
+  })
+
+  it('persists the effective selection so other modules can restore it', async () => {
+    searchState.sede = '199'
+    searchState.tuberia = '3'
+    searchState.desde = '2026-08-01'
+    searchState.hasta = '2026-08-25'
+
+    renderHook(() => useWaterFilters(), { wrapper: createWrapper() })
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('zeia-filter-selection') || '{}')
+      expect(stored.water).toMatchObject({ sede: 199, tuberia: 3 })
     })
   })
 })
