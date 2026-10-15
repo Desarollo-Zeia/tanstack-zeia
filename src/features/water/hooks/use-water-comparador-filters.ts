@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchWaterHeadquarters } from '../api/water-headquarters'
 import { fetchWaterMeasurementPoints } from '../api/water-measurement-points'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
+import { getPersistedFilterId } from '@/lib/filter-persistence'
+import { usePersistFilterSelection } from '@/hooks/use-persist-filter-selection'
 
 export const AGRUPACION_OPTIONS = ['hour'] as const
 export type Agrupacion = (typeof AGRUPACION_OPTIONS)[number]
@@ -56,14 +58,16 @@ export function useWaterComparadorFilters() {
     return measurementPointsData?.results.filter((mp) => mp.is_active) ?? []
   }, [measurementPointsData])
 
-  // Si no hay punto explícito en URL, usa el primer punto activo disponible.
-  // Si el punto de la URL no existe en la tubería actual (ej. sesión anterior),
-  // se descarta y se usa el primero disponible una vez que cargan los puntos.
+  // Si no hay punto explícito en URL, restaura la última selección o usa el primer
+  // punto activo disponible. Si el punto de la URL no existe en la tubería actual
+  // (ej. sesión anterior), se descarta y se deriva el default una vez cargan los puntos.
   const puntoId =
     rawPuntoId != null &&
     (measurementPoints.length === 0 || measurementPoints.some((mp) => mp.id === rawPuntoId))
       ? rawPuntoId
-      : (measurementPoints[0]?.id ?? null)
+      : (getPersistedFilterId('water', 'punto', measurementPoints) ??
+        measurementPoints[0]?.id ??
+        null)
 
   // Auto-select: if URL is missing values, navigate to defaults
   const hasAutoSelected = useRef(false)
@@ -83,10 +87,11 @@ export function useWaterComparadorFilters() {
 
     const firstActiveSede = headquarters.find((h) => h.is_active) ?? headquarters[0]
     // Ignora la sede de la URL si no pertenece al usuario actual (sesión anterior).
+    // Si la URL no trae sede, restaura la última selección y cae a la primera activa.
     const targetSedeId =
       sedeId != null && headquarters.some((h) => h.id === sedeId)
         ? sedeId
-        : (firstActiveSede?.id ?? null)
+        : (getPersistedFilterId('water', 'sede', headquarters) ?? firstActiveSede?.id ?? null)
 
     if (!targetSedeId) return
 
@@ -96,7 +101,7 @@ export function useWaterComparadorFilters() {
     const targetTuberiaId =
       tuberiaId != null && availablePipes.some((p) => p.id === tuberiaId)
         ? tuberiaId
-        : (availablePipes[0]?.id ?? null)
+        : (getPersistedFilterId('water', 'tuberia', availablePipes) ?? availablePipes[0]?.id ?? null)
 
     const targetDateAfter = dateAfter ?? today
     const targetDateBefore = dateBefore ?? today
@@ -136,6 +141,13 @@ export function useWaterComparadorFilters() {
     today,
     navigate,
   ])
+
+  // Persiste la selección efectiva para restaurarla al navegar entre módulos.
+  usePersistFilterSelection('water', {
+    sede: { value: sedeId, candidates: headquarters },
+    tuberia: { value: tuberiaId, candidates: pipes },
+    punto: { value: puntoId, candidates: measurementPoints },
+  })
 
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(

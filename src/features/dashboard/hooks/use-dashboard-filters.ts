@@ -3,6 +3,8 @@ import { useSearch, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchHeadquarters } from '../api/headquarters'
 import { formatDateISO, parseDateSafe } from '@/lib/date-utils'
+import { getPersistedFilterId } from '@/lib/filter-persistence'
+import { usePersistFilterSelection } from '@/hooks/use-persist-filter-selection'
 
 export function useDashboardFilters() {
   const navigate = useNavigate({ from: '/energia/dashboard/panel' })
@@ -52,10 +54,11 @@ export function useDashboardFilters() {
 
     const firstActiveSede = headquarters.find((h) => h.is_active) ?? headquarters[0]
     // Ignora la sede de la URL si no pertenece al usuario actual (sesión anterior).
+    // Si la URL no trae sede, restaura la última selección y cae a la primera activa.
     const targetSedeId =
       sedeId != null && headquarters.some((h) => h.id === sedeId)
         ? sedeId
-        : (firstActiveSede?.id ?? null)
+        : (getPersistedFilterId('energy', 'sede', headquarters) ?? firstActiveSede?.id ?? null)
 
     if (!targetSedeId) return
 
@@ -65,7 +68,7 @@ export function useDashboardFilters() {
     const targetPanelId =
       panelId != null && availablePanels.some((p) => p.id === panelId)
         ? panelId
-        : (availablePanels[0]?.id ?? null)
+        : (getPersistedFilterId('energy', 'panel', availablePanels) ?? availablePanels[0]?.id ?? null)
 
     const targetDateAfter = dateAfter ?? today
     const targetDateBefore = dateBefore ?? today
@@ -114,6 +117,12 @@ export function useDashboardFilters() {
     search.mp_anio,
     search.mp_mes,
   ])
+
+  // Persiste la selección efectiva para restaurarla al navegar entre módulos.
+  usePersistFilterSelection('energy', {
+    sede: { value: sedeId, candidates: headquarters },
+    panel: { value: panelId, candidates: panels },
+  })
 
   // Handlers — just navigate, no local state
   const setSedeId = useCallback(

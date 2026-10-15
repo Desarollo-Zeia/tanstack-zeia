@@ -2,6 +2,8 @@ import { useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearch, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchHeadquarters } from '../api/headquarters'
+import { getPersistedFilterId } from '@/lib/filter-persistence'
+import { usePersistFilterSelection } from '@/hooks/use-persist-filter-selection'
 
 export function useTarifarioFilters() {
   const navigate = useNavigate({ from: '/energia/dashboard/tarifario' })
@@ -38,10 +40,11 @@ export function useTarifarioFilters() {
 
     const firstActiveSede = headquarters.find((h) => h.is_active) ?? headquarters[0]
     // Ignora la sede de la URL si no pertenece al usuario actual (sesión anterior).
+    // Si la URL no trae sede, restaura la última selección y cae a la primera activa.
     const targetSedeId =
       sedeId != null && headquarters.some((h) => h.id === sedeId)
         ? sedeId
-        : (firstActiveSede?.id ?? null)
+        : (getPersistedFilterId('energy', 'sede', headquarters) ?? firstActiveSede?.id ?? null)
 
     if (!targetSedeId) return
 
@@ -55,6 +58,11 @@ export function useTarifarioFilters() {
       })
     }
   }, [headquarters, sedeId, navigate, search.tab])
+
+  // Persiste la selección efectiva para restaurarla al navegar entre módulos.
+  usePersistFilterSelection('energy', {
+    sede: { value: sedeId, candidates: headquarters },
+  })
 
   const setSedeId = useCallback(
     (id: number) => {

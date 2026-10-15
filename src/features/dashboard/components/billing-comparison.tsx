@@ -18,6 +18,7 @@ import { useBillingCycles } from '../hooks/use-billing-cycles'
 import type { BillingCalculateResponse, BillingCycleItem } from '../types'
 import {
   formatMoney,
+  formatRate,
   getBillingTotals,
   getChargeDetailLine,
   formatCycleRange,
@@ -281,6 +282,7 @@ function BillingCard({
               {data.results.map((item) => {
                 const style = itemStyles.get(item.code) ?? FALLBACK_CHARGE_STYLE
                 const detailLine = getChargeDetailLine(item)
+                const rate = formatRate(item.details)
                 const isHovered = hoveredCode === item.code
                 return (
                   <li
@@ -310,7 +312,12 @@ function BillingCard({
                       >
                         {item.name}
                       </p>
-                      {detailLine && <p className="text-xs text-text-muted">{detailLine}</p>}
+                      {detailLine && (
+                        <p className="text-xs text-text-muted">
+                          <span>{detailLine}</span>
+                          {rate && <span> · Tarifa {rate}</span>}
+                        </p>
+                      )}
                     </div>
                     <span
                       className={cn(

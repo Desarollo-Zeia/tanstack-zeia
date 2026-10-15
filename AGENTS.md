@@ -379,6 +379,14 @@ Each module that needs filters creates its own hook in `features/{module}/hooks/
 3. Auto-selects defaults on mount if URL params are missing
 4. Exposes `isReady` (all required params present)
 5. Provides typed handlers that navigate to update the URL
+6. Persists/restores the last selection (sede/panel/tubería/punto) so filters survive navigation between modules (see below)
+
+**Filter persistence (cross-module):** The sidebar links navigate to bare URLs (no search params), so when URL params are missing the auto-select fallback chain is: **URL value valid → persisted value valid → first active**. Two helpers from `src/lib/filter-persistence.ts` make this work:
+
+- `getPersistedFilterId(resource, field, candidates)` — reads the last selection from localStorage (key `zeia-filter-selection`, namespaced by resource `'energy' | 'water'`) and returns it only if it exists in the loaded candidates (discards stale ids from other users/sessions).
+- `usePersistFilterSelection(resource, { sede, panel, tuberia, punto })` — effect that saves the effective (validated) selection on every change.
+
+Storage ids are per-user-session data; **never** restore a persisted id without validating it against the fetched list. The persistence store is best-effort (localStorage may throw in private mode). If the HQ list changes (different user), the auto-select effect re-validates as before.
 
 **Note:** The auto-selection logic uses `useEffect` + `useRef` to avoid loops. This is the **only** valid exception to the "no setState in useEffect" rule (see Rule #1 in Codebase Rules).
 

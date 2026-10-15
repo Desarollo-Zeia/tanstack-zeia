@@ -244,6 +244,10 @@ describe('BillingComparison', () => {
     ).toHaveLength(2)
     expect(screen.getAllByText('100.00 MWh')).toHaveLength(1)
     expect(screen.getAllByText('Distribución de cargos')).toHaveLength(2)
+
+    // La tarifa (rate + rate_unit) acompaña al consumo en cada cargo;
+    // el cargo fijo (details: null) no muestra tarifa
+    expect(screen.getAllByText(/Tarifa 38\.18 \$ \/ MWh/)).toHaveLength(4)
   })
 
   it('labels each selector with the month of its cycle dates', async () => {
@@ -380,6 +384,9 @@ describe('BillingComparison', () => {
     // Energia reactiva: se muestra el exceso facturado
     expect(screen.getByText('30000.00 kVArh')).toBeInTheDocument()
     expect(screen.getByText('21802.28 kVArh')).toBeInTheDocument()
+
+    // La tarifa usa el rate_unit propio del cargo (kVArh → "S/ / kVArh")
+    expect(screen.getAllByText(/Tarifa 0\.05 S\/ \/ kVArh/)).toHaveLength(2)
 
     // El % de consumo solo considera energia activa (150 → 100 MWh = 33.3%),
     // sin mezclar los kVArh de la energia reactiva
