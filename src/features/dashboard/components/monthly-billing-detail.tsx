@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   formatCycleRange,
   formatMoney,
+  formatRate,
   getBillingTotals,
   getChargeDetailLine,
   getCycleLabel,
@@ -96,6 +97,7 @@ export function MonthlyBillingDetail({
         <ul className="space-y-3">
           {billingData.results.map((item) => {
             const consumption = getChargeDetailLine(item)
+            const rate = formatRate(item.details)
             const { Icon, className } = getChargeIcon(item.code)
             return (
               <li
@@ -116,7 +118,8 @@ export function MonthlyBillingDetail({
                   </p>
                   {consumption && (
                     <p className="mt-0.5 font-mono text-xs tabular-nums text-text-muted">
-                      {consumption}
+                      <span>{consumption}</span>
+                      {rate && <span> · Tarifa {rate}</span>}
                     </p>
                   )}
                 </div>

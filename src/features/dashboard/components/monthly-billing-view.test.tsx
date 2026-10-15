@@ -136,6 +136,9 @@ describe('MonthlyBillingView', () => {
     ).toBeGreaterThan(0)
     expect(screen.queryByText('Empresa Concesionaria')).not.toBeInTheDocument()
     expect(screen.queryByText('N° de Suministro')).not.toBeInTheDocument()
+
+    // Cada cargo muestra su tarifa (rate + rate_unit) junto al consumo
+    expect(screen.getAllByText(/Tarifa 39\.15 \$ \/ MWh/)).toHaveLength(2)
   })
 
   it('cambia el hero y el desglose al seleccionar otra barra', async () => {
