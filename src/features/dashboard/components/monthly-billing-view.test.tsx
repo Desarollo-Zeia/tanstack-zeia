@@ -45,6 +45,7 @@ const mockCycles: BillingCyclesResponse = {
     {
       id: 0,
       energy_headquarter: 67,
+      name: 'Mayo 2026',
       start_date: '2026-05-01',
       end_date: '2026-05-31',
       is_current: false,
@@ -53,6 +54,7 @@ const mockCycles: BillingCyclesResponse = {
     {
       id: 1,
       energy_headquarter: 67,
+      name: 'Junio 2026',
       start_date: '2026-06-01',
       end_date: '2026-06-30',
       is_current: false,
@@ -61,9 +63,36 @@ const mockCycles: BillingCyclesResponse = {
     {
       id: 2,
       energy_headquarter: 67,
+      name: 'Julio 2026',
       start_date: '2026-07-01',
       end_date: '2026-07-31',
       is_current: true,
+      billing_type: 'energy',
+    },
+  ],
+}
+
+// Mismas fechas y nombres que la respuesta real del backend: el ciclo 30 empieza el 30/09
+// pero se llama "Octubre 2026", así que la etiqueta debe salir de `name`
+const backendNamedCycles: BillingCyclesResponse = {
+  count: 2,
+  results: [
+    {
+      id: 30,
+      energy_headquarter: 67,
+      name: 'Octubre 2026',
+      start_date: '2026-09-30',
+      end_date: '2026-10-29',
+      is_current: true,
+      billing_type: 'energy',
+    },
+    {
+      id: 28,
+      energy_headquarter: 67,
+      name: 'Septiembre 2026',
+      start_date: '2026-09-04',
+      end_date: '2026-09-29',
+      is_current: false,
       billing_type: 'energy',
     },
   ],
@@ -158,5 +187,20 @@ describe('MonthlyBillingView', () => {
     expect(screen.getByText(/Ese mes pagaste/)).toBeInTheDocument()
     expect(screen.getAllByText('$3,000.00').length).toBeGreaterThanOrEqual(2)
     expect(screen.getByText(/Gastaste más que en/)).toBeInTheDocument()
+  })
+
+  it('usa el name del backend como etiqueta aunque start_date caiga en el mes anterior', async () => {
+    vi.spyOn(billingCyclesApi, 'fetchBillingCycles').mockResolvedValue(backendNamedCycles)
+
+    renderWithProviders(<MonthlyBillingView sedeId={67} />)
+
+    // Ambos ciclos empiezan en 2026-09: el mock les da $2,000 a cada uno (delta 0 = ahorro)
+    await waitFor(() => {
+      expect(screen.getByText(/Ahorraste frente a septiembre 2026/)).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('Desglose — Octubre 2026')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sep' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Oct' })).toBeInTheDocument()
   })
 })

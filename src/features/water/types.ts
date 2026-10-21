@@ -179,6 +179,8 @@ export interface WaterBillingCalculateResponse {
 export interface WaterBillingCycleItem {
   id: number
   energy_headquarter: number
+  // Etiqueta del ciclo enviada por el backend (p.ej. "Octubre 2026")
+  name: string
   start_date: string
   end_date: string
   is_current: boolean

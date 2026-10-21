@@ -84,8 +84,14 @@ export function formatCycleRange(startDate: string, endDate: string): string {
   return `${start.getDate()} de ${startMonth} — ${end.getDate()} de ${endMonth}`
 }
 
-/** Etiqueta del ciclo segun el mes de su fecha de inicio: "Julio 2026" */
+/**
+ * Etiqueta del ciclo para la UI: usa el `name` que envía el backend ("Octubre 2026").
+ * Si `name` viene vacío o no existe, la deriva del mes de `start_date` ("Julio 2026");
+ * devuelve "—" si la fecha no se puede interpretar.
+ */
 export function getCycleLabel(cycle: BillingCycleItem): string {
+  const name = typeof cycle.name === 'string' ? cycle.name.trim() : ''
+  if (name) return name
   const start = parseISODateLocal(cycle.start_date)
   if (!start) return '—'
   const monthName = start.toLocaleString('es-ES', { month: 'long' })

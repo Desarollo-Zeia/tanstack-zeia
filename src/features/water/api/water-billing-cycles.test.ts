@@ -23,28 +23,32 @@ describe('fetchWaterBillingCycles', () => {
       count: 2,
       results: [
         {
-          id: 35,
-          energy_headquarter: 199,
-          start_date: '2026-09-01',
-          end_date: '2026-09-30',
+          id: 30,
+          energy_headquarter: 200,
+          name: 'Octubre 2026',
+          start_date: '2026-09-30',
+          end_date: '2026-10-29',
           is_current: true,
           billing_type: 'water',
         },
         {
-          id: 24,
-          energy_headquarter: 199,
-          start_date: '2026-08-01',
-          end_date: '2026-08-31',
+          id: 28,
+          energy_headquarter: 200,
+          name: 'Septiembre 2026',
+          start_date: '2026-09-04',
+          end_date: '2026-09-29',
           is_current: false,
           billing_type: 'water',
         },
       ],
     })
 
-    const result = await fetchWaterBillingCycles(199)
+    const result = await fetchWaterBillingCycles(200)
 
     expect(result.count).toBe(2)
     expect(result.results).toHaveLength(2)
+    expect(result.results[0].name).toBe('Octubre 2026')
+    expect(result.results[1].name).toBe('Septiembre 2026')
     expect(result.results[0].is_current).toBe(true)
     expect(result.results[0].billing_type).toBe('water')
   })

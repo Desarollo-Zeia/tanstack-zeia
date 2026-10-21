@@ -26,6 +26,7 @@ const mockCycles: BillingCyclesResponse = {
     {
       id: 1,
       energy_headquarter: 67,
+      name: 'Junio 2026',
       start_date: '2026-06-01',
       end_date: '2026-06-30',
       is_current: false,
@@ -34,6 +35,7 @@ const mockCycles: BillingCyclesResponse = {
     {
       id: 2,
       energy_headquarter: 67,
+      name: 'Julio 2026',
       start_date: '2026-07-01',
       end_date: '2026-07-31',
       is_current: true,

@@ -27,6 +27,7 @@ const mockCycles: BillingCyclesResponse = {
     {
       id: 2,
       energy_headquarter: 67,
+      name: 'Julio 2026',
       start_date: '2026-07-01',
       end_date: '2026-07-31',
       is_current: true,
@@ -35,6 +36,7 @@ const mockCycles: BillingCyclesResponse = {
     {
       id: 1,
       energy_headquarter: 67,
+      name: 'Junio 2026',
       start_date: '2026-06-01',
       end_date: '2026-06-30',
       is_current: false,
@@ -250,7 +252,7 @@ describe('BillingComparison', () => {
     expect(screen.getAllByText(/Tarifa 38\.18 \$ \/ MWh/)).toHaveLength(4)
   })
 
-  it('labels each selector with the month of its cycle dates', async () => {
+  it('labels each selector with the cycle name', async () => {
     mockBillingCycles()
     mockBillingCalculate()
 
@@ -260,6 +262,45 @@ describe('BillingComparison', () => {
       expect(screen.getByText('Junio 2026')).toBeInTheDocument()
       expect(screen.getByText('Julio 2026')).toBeInTheDocument()
     })
+  })
+
+  it('uses the backend cycle name and falls back to the start_date month when name is empty', async () => {
+    // El ciclo actual empieza el 30/06 pero el backend lo llama "Julio 2026";
+    // el anterior no trae name y se etiqueta con el mes de su start_date
+    mockBillingCycles({
+      count: 2,
+      results: [
+        {
+          id: 2,
+          energy_headquarter: 67,
+          name: 'Julio 2026',
+          start_date: '2026-06-30',
+          end_date: '2026-07-29',
+          is_current: true,
+          billing_type: 'energy',
+        },
+        {
+          id: 1,
+          energy_headquarter: 67,
+          name: '',
+          start_date: '2026-06-01',
+          end_date: '2026-06-29',
+          is_current: false,
+          billing_type: 'energy',
+        },
+      ],
+    })
+    mockBillingCalculate()
+
+    renderWithProviders(<BillingComparison sedeId={67} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Comparando Junio 2026 - Julio 2026/)).toBeInTheDocument()
+    })
+
+    // Con la etiqueta derivada solo de start_date, ambos selectores dirían "Junio 2026"
+    expect(screen.getByText('Julio 2026')).toBeInTheDocument()
+    expect(screen.getByText('Junio 2026')).toBeInTheDocument()
   })
 
   it('shows savings banner when current cycle is cheaper', async () => {

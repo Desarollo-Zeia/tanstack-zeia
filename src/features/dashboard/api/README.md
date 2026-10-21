@@ -586,6 +586,7 @@ Returns the billing cycles available for a headquarter. The cycle with `is_curre
 interface BillingCycleItem {
   id: number
   energy_headquarter: number
+  name: string        // display label sent by the backend, e.g. "Octubre 2026"
   start_date: string  // format YYYY-MM-DD
   end_date: string    // format YYYY-MM-DD
   is_current: boolean
@@ -597,3 +598,5 @@ interface BillingCyclesResponse {
   results: BillingCycleItem[]
 }
 ```
+
+> **Note:** `name` is the cycle's display label. The UI renders it through `getCycleLabel()` (`src/features/dashboard/lib/billing-format.ts`) in the period selectors, the monthly chart (the x-axis uses its first 3 letters), the breakdown and the hero. It is not derived from `start_date` because a cycle can start on the last day of the previous month (`start_date: "2026-09-30"` → `name: "Octubre 2026"`). If `name` is missing or empty, the UI falls back to the month of `start_date`.

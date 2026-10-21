@@ -52,14 +52,9 @@ interface MonthlyBillingChartProps {
   isLoading: boolean
 }
 
+/** Etiqueta corta del eje X: 3 primeras letras del nombre del ciclo ("Octubre 2026" → "Oct") */
 function getShortLabel(cycle: BillingCycleItem): string {
-  const parts = cycle.start_date.split('-')
-  if (parts.length !== 3) return getCycleLabel(cycle)
-  const month = Number(parts[1])
-  const date = new Date(2000, month - 1, 1)
-  const monthShort = date.toLocaleString('es-ES', { month: 'short' }).replace('.', '')
-  const capitalized = monthShort.charAt(0).toUpperCase() + monthShort.slice(1)
-  return capitalized
+  return getCycleLabel(cycle).split(' ')[0].slice(0, 3)
 }
 
 export function MonthlyBillingChart({

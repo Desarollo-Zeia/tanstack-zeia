@@ -286,3 +286,69 @@ Descarga el reporte de lecturas de un punto de medición de agua como archivo bi
 - `file_format` (string) — `csv` | `xlsx`
 
 **Implementación:** `downloadWaterReadingsReport()` en `src/features/water/api/water-download-report.ts`. El filename se construye como `{nombre_del_punto}_{dd-mm-yy}_{dd-mm-yy}.{format}` (espacios reemplazados por `_`).
+
+---
+
+## 9. Water Billing Cycles (Ciclos de Facturación de Agua)
+
+```
+GET /headquarter/{headquarter_id}/water/billing-cycles/
+```
+
+Devuelve los ciclos de facturación de agua de una sede. El ciclo con `is_current: true` es el vigente: es el mes por defecto del tab Mensual y el ciclo que usa `WaterBillingDetailTable`. La lista completa alimenta `WaterMonthlyBillingChart` y los selectores de `WaterBillingComparison`.
+
+**Usado por:** Consumo Tarifario Agua (`/energia/water/dashboard/tarifario`).
+
+**Path params:**
+- `headquarter_id` (number, required)
+
+**Implementación:** `fetchWaterBillingCycles()` en `src/features/water/api/water-billing-cycles.ts` (hook `useWaterBillingCycles`).
+
+**Response:** `WaterBillingCyclesResponse` (see `src/features/water/types.ts`)
+
+```typescript
+interface WaterBillingCycleItem {
+  id: number
+  energy_headquarter: number
+  name: string        // etiqueta del ciclo enviada por el backend, p.ej. "Octubre 2026"
+  start_date: string  // formato YYYY-MM-DD
+  end_date: string    // formato YYYY-MM-DD
+  is_current: boolean
+  billing_type: string  // 'water'
+}
+
+interface WaterBillingCyclesResponse {
+  count: number
+  results: WaterBillingCycleItem[]
+}
+```
+
+Ejemplo de respuesta:
+
+```json
+{
+  "count": 2,
+  "results": [
+    {
+      "id": 30,
+      "energy_headquarter": 200,
+      "name": "Octubre 2026",
+      "start_date": "2026-09-30",
+      "end_date": "2026-10-29",
+      "is_current": true,
+      "billing_type": "water"
+    },
+    {
+      "id": 28,
+      "energy_headquarter": 200,
+      "name": "Septiembre 2026",
+      "start_date": "2026-09-04",
+      "end_date": "2026-09-29",
+      "is_current": false,
+      "billing_type": "water"
+    }
+  ]
+}
+```
+
+> **Nota:** `name` es la etiqueta visible del ciclo. La UI la muestra vía `getWaterCycleLabel()` (`src/features/water/lib/water-billing-format.ts`, re-export de `getCycleLabel()`) en los selectores del comparador, la gráfica mensual (el eje usa sus 3 primeras letras), el desglose y el hero. No se deriva de `start_date` porque un ciclo puede empezar el último día del mes anterior (`start_date: "2026-09-30"` → `name: "Octubre 2026"`). Si `name` falta o viene vacío, se usa como respaldo el mes de `start_date`.
