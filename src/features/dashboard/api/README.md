@@ -448,10 +448,10 @@ interface ConsumptionCycleDetailResponse {
   electrical_panel_threads: number
   energy_provider: string | null
   supply_number: string | null
-  billing_cycle_start: string
-  billing_cycle_end: string
-  ratedays: number
-  totalratedays: number
+  billing_cycle_start: string | null  // null when the headquarter has no current billing cycle
+  billing_cycle_end: string | null
+  ratedays: number | null
+  totalratedays: number | null
   total_consumption: number
   unit_energy: string
   cost: number
@@ -462,6 +462,8 @@ interface ConsumptionCycleDetailResponse {
   date_last_value: string | null
 }
 ```
+
+> **Note:** headquarters without a current billing cycle return `billing_cycle_start`, `billing_cycle_end`, `ratedays` and `totalratedays` as `null` (same as `water/consumption-cycle/detail`). `BillingCycleTable` must guard them: it shows "Sin ciclo vigente" and "—" instead of calling `formatDateShort(null)`, which throws.
 
 ---
 

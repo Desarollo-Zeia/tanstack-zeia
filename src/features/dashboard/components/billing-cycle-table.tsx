@@ -46,16 +46,25 @@ export function BillingCycleTable({ sedeId }: BillingCycleTableProps) {
     return null
   }
 
+  // Sin ciclo vigente el backend envía las fechas (y los días) en null
+  const { billing_cycle_start: cycleStart, billing_cycle_end: cycleEnd } = data
+
   const columns = [
     { label: 'Empresa Concesionaria', value: data.energy_provider ?? 'Sin especificar' },
     { label: 'N° de Suministro', value: data.supply_number ?? 'N/A' },
     {
       label: 'Días Facturados',
-      value: `${data.ratedays} de ${data.totalratedays} días`,
+      value:
+        data.ratedays != null && data.totalratedays != null
+          ? `${data.ratedays} de ${data.totalratedays} días`
+          : '—',
     },
     {
       label: 'Ciclo de Facturación',
-      value: `${formatDateShort(data.billing_cycle_start)} — ${formatDateShort(data.billing_cycle_end)}`,
+      value:
+        cycleStart && cycleEnd
+          ? `${formatDateShort(cycleStart)} — ${formatDateShort(cycleEnd)}`
+          : 'Sin ciclo vigente',
     },
     { label: 'Potencia Contratada', value: `${data.power_contracted} kW` },
     { label: 'Tipo', value: data.electrical_panel_type },

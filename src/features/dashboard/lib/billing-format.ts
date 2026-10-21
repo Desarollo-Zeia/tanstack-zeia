@@ -39,8 +39,9 @@ export function getBillingTotals(data: BillingCalculateResponse): BillingTotal[]
 }
 
 function getPowerUnit(details: BillingCalculateDetails): string {
-  if (!('rate_unit' in details)) return 'kW'
-  return details.rate_unit.includes('/') ? details.rate_unit.split('/')[1] : 'kW'
+  // Defensivo: si rate_unit falta o llega en null (cargo sin tarifa) se asume kW
+  const rateUnit: unknown = details.rate_unit
+  return typeof rateUnit === 'string' && rateUnit.includes('/') ? rateUnit.split('/')[1] : 'kW'
 }
 
 /** Linea de detalle para la lista de cargos: "145.89 MWh" / "21802.28 kVArh" / "434.01 kW" / null */
@@ -57,9 +58,12 @@ export function getChargeDetailLine(item: BillingCalculateItem): string | null {
   return `${details.max_power.toFixed(2)} ${getPowerUnit(details)}`
 }
 
-/** Tarifa formateada: "38.18 $ / MWh" / "6.25 $ / kW" / null */
+/** Tarifa formateada: "38.18 $ / MWh" / "6.25 $ / kW" / null (sin tarifa) */
 export function formatRate(details: BillingCalculateDetails | null): string | null {
-  if (!details || !('rate' in details)) return null
+  // Defensivo: sin tarifa si details es null o si rate/rate_unit faltan o llegan en null
+  if (!details || typeof details.rate !== 'number' || typeof details.rate_unit !== 'string') {
+    return null
+  }
   const [currency, unit] = details.rate_unit.includes('/')
     ? details.rate_unit.split('/')
     : [details.rate_unit, '']

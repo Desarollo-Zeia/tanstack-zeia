@@ -331,10 +331,11 @@ export interface ConsumptionCycleDetailResponse {
   electrical_panel_type: string
   energy_provider: string | null
   supply_number: string | null
-  billing_cycle_start: string
-  billing_cycle_end: string
-  ratedays: number
-  totalratedays: number
+  // null cuando la sede no tiene un ciclo de facturación vigente
+  billing_cycle_start: string | null
+  billing_cycle_end: string | null
+  ratedays: number | null
+  totalratedays: number | null
 }
 
 export interface ChargeItem {
