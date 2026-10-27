@@ -61,14 +61,33 @@ export interface MeasurementPointsResponse {
 }
 
 // Device Measurement Points List
+// Topología real del punto. Usar este campo (no `type`, que no distingue
+// 3 hilos de 4 hilos) para saber si hay tensiones de fase y/o de línea.
+export type MonitoringTopology = 'mono_1f' | 'three_phase_3w' | 'three_phase_4w'
+
 export interface MeasurementPointThresholdRange {
   lower_threshold: number | null
   upper_threshold: number | null
   nominal_voltage?: number | null
 }
 
+// Banda de voltaje en voltios absolutos (no porcentajes)
+export interface VoltageBand {
+  lower_threshold: number
+  upper_threshold: number
+  nominal_voltage: number
+}
+
+// Las claves de primer nivel son históricas (nominal directo, compatibilidad).
+// Para graficar usar `phase` (Ua/Ub/Uc/U) o `line` (Uab/Ubc/Uac):
+// en 3F-4H `line` = nominal × √3.
+export interface VoltageThresholds extends VoltageBand {
+  phase: VoltageBand
+  line: VoltageBand
+}
+
 export interface MeasurementPointThresholds {
-  voltage?: MeasurementPointThresholdRange | null
+  voltage?: VoltageThresholds | null
   current?: MeasurementPointThresholdRange | null
   power?: MeasurementPointThresholdRange | null
   energy?: MeasurementPointThresholdRange | null
@@ -80,8 +99,11 @@ export interface DeviceMeasurementPoint {
   is_active: boolean
   channel: string
   type: string
-  key: string
+  key: string | null
   capacity: string
+  // Tensión nominal del punto en V
+  capacity_voltage: number | null
+  monitoring_topology: MonitoringTopology | null
   hardware: string
   device: string
   dev_eui: string

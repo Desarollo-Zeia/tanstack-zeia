@@ -147,7 +147,7 @@ function HomeDashboardPage() {
               onIndicatorChange={(indicator) =>
                 category && setIndicatorSelection({ category, indicator })
               }
-              thresholds={currentMeasurementPoint?.thresholds ?? null}
+              measurementPoint={currentMeasurementPoint}
             />
             <ReadingsTable
               data={readingsData}

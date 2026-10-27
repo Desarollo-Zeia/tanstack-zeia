@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { ReadingsGraph } from './readings-graph'
-import type { ReadingGraphPoint } from '../types'
+import type { DeviceMeasurementPoint, ReadingGraphPoint } from '../types'
 
 const capturedLineProps = vi.hoisted(() => ({
   current: null as {
@@ -80,8 +80,41 @@ const mockVoltageData: ReadingGraphPoint[] = [
   },
 ]
 
-const voltageThresholds = {
-  voltage: { lower_threshold: 361, upper_threshold: 399, nominal_voltage: 380 },
+const mockLineVoltageData: ReadingGraphPoint[] = [
+  {
+    period: '2026-06-24T08:00:00-05:00',
+    first_reading: '2026-06-24T08:00:00-05:00',
+    last_reading: '2026-06-24T08:00:00-05:00',
+    indicator: 'Uab',
+    unit: 'V',
+    first_value: 389.4,
+    last_value: 389.4,
+    difference: null,
+    device: '00956906000ab814',
+    measurement_point: 'Llave General TGE-TR1',
+  },
+]
+
+type GraphMeasurementPoint = Pick<DeviceMeasurementPoint, 'thresholds' | 'monitoring_topology'>
+
+// 3F-4H, nominal 220 V, tolerancia 5%: la banda de línea es nominal × √3
+const fourWirePoint: GraphMeasurementPoint = {
+  monitoring_topology: 'three_phase_4w',
+  thresholds: {
+    voltage: {
+      lower_threshold: 209,
+      upper_threshold: 231,
+      nominal_voltage: 220,
+      phase: { lower_threshold: 209, upper_threshold: 231, nominal_voltage: 220 },
+      line: { lower_threshold: 362, upper_threshold: 400.1, nominal_voltage: 381.05 },
+    },
+  },
+}
+
+function thresholdLabels(): string[] {
+  return (capturedLineProps.current?.data?.datasets ?? [])
+    .map((d) => d.label ?? '')
+    .filter((label) => label.startsWith('Umbral'))
 }
 
 const baseProps = {
@@ -251,16 +284,16 @@ describe('ReadingsGraph', () => {
     })
   })
 
-  it('renders threshold line datasets when thresholds match the active category', async () => {
+  it('draws the phase band for phase voltages (Ua)', async () => {
     vi.mocked(fetchReadingsGraph).mockResolvedValue(mockVoltageData)
 
     render(
       <ReadingsGraph
         {...baseProps}
         category="voltage"
-        availableIndicators={['Ua']}
+        availableIndicators={['Ua', 'Uab']}
         activeIndicator="Ua"
-        thresholds={voltageThresholds}
+        measurementPoint={fourWirePoint}
       />,
       { wrapper: createWrapper() }
     )
@@ -269,9 +302,126 @@ describe('ReadingsGraph', () => {
       expect(screen.getByTestId('line-chart')).toBeInTheDocument()
     })
 
-    const labels = capturedLineProps.current?.data?.datasets.map((d) => d.label) ?? []
-    expect(labels).toContain('Umbral superior: 399 V')
-    expect(labels).toContain('Umbral inferior: 361 V')
+    expect(thresholdLabels()).toEqual(['Umbral superior: 231 V', 'Umbral inferior: 209 V'])
+  })
+
+  it('draws the line band (nominal × √3) for line voltages (Uab) on 3F-4H', async () => {
+    vi.mocked(fetchReadingsGraph).mockResolvedValue(mockLineVoltageData)
+
+    render(
+      <ReadingsGraph
+        {...baseProps}
+        category="voltage"
+        availableIndicators={['Ua', 'Uab']}
+        activeIndicator="Uab"
+        measurementPoint={fourWirePoint}
+      />,
+      { wrapper: createWrapper() }
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    })
+
+    expect(thresholdLabels()).toEqual(['Umbral superior: 400.1 V', 'Umbral inferior: 362 V'])
+  })
+
+  it('switches from the phase band to the line band when the indicator changes', async () => {
+    vi.mocked(fetchReadingsGraph).mockImplementation(
+      async (_hq, _panel, _mp, _after, _before, indicator) =>
+        indicator === 'Uab' ? mockLineVoltageData : mockVoltageData
+    )
+
+    const voltageProps = {
+      ...baseProps,
+      category: 'voltage' as const,
+      availableIndicators: ['Ua', 'Uab'],
+      measurementPoint: fourWirePoint,
+    }
+
+    const { rerender } = render(<ReadingsGraph {...voltageProps} activeIndicator="Ua" />, {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(thresholdLabels()).toEqual(['Umbral superior: 231 V', 'Umbral inferior: 209 V'])
+    })
+
+    rerender(<ReadingsGraph {...voltageProps} activeIndicator="Uab" />)
+
+    await waitFor(() => {
+      expect(thresholdLabels()).toEqual(['Umbral superior: 400.1 V', 'Umbral inferior: 362 V'])
+    })
+  })
+
+  it('does not draw limits for voltage indicators without a phase/line band (THDVr)', async () => {
+    vi.mocked(fetchReadingsGraph).mockResolvedValue([
+      { ...mockVoltageData[0], indicator: 'THDVr', unit: '%', first_value: 2.1, last_value: 2.1 },
+    ])
+
+    render(
+      <ReadingsGraph
+        {...baseProps}
+        category="voltage"
+        availableIndicators={['THDVr']}
+        activeIndicator="THDVr"
+        measurementPoint={fourWirePoint}
+      />,
+      { wrapper: createWrapper() }
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    })
+
+    expect(thresholdLabels()).toEqual([])
+  })
+
+  it('does not draw limits when the measurement point has thresholds: null', async () => {
+    vi.mocked(fetchReadingsGraph).mockResolvedValue(mockVoltageData)
+
+    render(
+      <ReadingsGraph
+        {...baseProps}
+        category="voltage"
+        availableIndicators={['Ua']}
+        activeIndicator="Ua"
+        measurementPoint={{ monitoring_topology: 'three_phase_4w', thresholds: null }}
+      />,
+      { wrapper: createWrapper() }
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    })
+
+    expect(thresholdLabels()).toEqual([])
+  })
+
+  it('keeps using the category thresholds for non-voltage categories (current)', async () => {
+    vi.mocked(fetchReadingsGraph).mockResolvedValue([
+      { ...mockVoltageData[0], indicator: 'Ia', unit: 'A', first_value: 120, last_value: 120 },
+    ])
+
+    render(
+      <ReadingsGraph
+        {...baseProps}
+        category="current"
+        availableIndicators={['Ia']}
+        activeIndicator="Ia"
+        measurementPoint={{
+          monitoring_topology: 'three_phase_4w',
+          thresholds: { current: { lower_threshold: 10, upper_threshold: 200 } },
+        }}
+      />,
+      { wrapper: createWrapper() }
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('line-chart')).toBeInTheDocument()
+    })
+
+    expect(thresholdLabels()).toEqual(['Umbral superior: 200 A', 'Umbral inferior: 10 A'])
   })
 
   it('does not render threshold datasets when the active category has no thresholds', async () => {
@@ -291,7 +441,7 @@ describe('ReadingsGraph', () => {
     ])
 
     render(
-      <ReadingsGraph {...baseProps} category="power" thresholds={voltageThresholds} />,
+      <ReadingsGraph {...baseProps} category="power" measurementPoint={fourWirePoint} />,
       { wrapper: createWrapper() }
     )
 
@@ -306,7 +456,7 @@ describe('ReadingsGraph', () => {
   it('does not render threshold datasets when thresholds are not provided', async () => {
     vi.mocked(fetchReadingsGraph).mockResolvedValue(mockEnergyData)
 
-    render(<ReadingsGraph {...baseProps} category="energy" thresholds={null} />, {
+    render(<ReadingsGraph {...baseProps} category="energy" measurementPoint={null} />, {
       wrapper: createWrapper(),
     })
 
@@ -327,7 +477,7 @@ describe('ReadingsGraph', () => {
         category="voltage"
         availableIndicators={['Ua']}
         activeIndicator="Ua"
-        thresholds={voltageThresholds}
+        measurementPoint={fourWirePoint}
       />,
       { wrapper: createWrapper() }
     )
@@ -341,8 +491,8 @@ describe('ReadingsGraph', () => {
       | undefined
     if (!filter) throw new Error('tooltip filter callback not defined')
 
-    expect(filter({ dataset: { label: 'Umbral superior: 399 V' } })).toBe(false)
-    expect(filter({ dataset: { label: 'Umbral inferior: 361 V' } })).toBe(false)
+    expect(filter({ dataset: { label: 'Umbral superior: 231 V' } })).toBe(false)
+    expect(filter({ dataset: { label: 'Umbral inferior: 209 V' } })).toBe(false)
     expect(filter({ dataset: { label: 'Ua' } })).toBe(true)
   })
 

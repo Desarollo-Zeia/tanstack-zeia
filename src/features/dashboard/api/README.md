@@ -87,22 +87,26 @@ interface MeasurementPointsResponse {
 ## 3. List Device Measurement Points by Panel
 
 ```
-GET /headquarter/{headquarter_id}/electrical_panel/{panel_id}/devices/measurement-points/list/?date_after={YYYY-MM-DD}&date_before={YYYY-MM-DD}
+GET /headquarter/{headquarter_id}/electrical_panel/{panel_id}/devices/measurement-points/list/?page=1&page_size=100
 ```
 
-Returns a flat list of all measurement points (devices) for a specific panel and date range.
+Returns a flat, paginated list of the measurement points of a panel, with their topology and the voltage bands used to draw reference lines in charts. Responds `404` if the user does not belong to the headquarter's company.
 
 **Path params:**
 - `headquarter_id` (number, required)
 - `panel_id` (number, required)
 
 **Query params:**
-- `date_after` (string, required) — format `YYYY-MM-DD`
-- `date_before` (string, required) — format `YYYY-MM-DD`
+- `page` (number, optional) — default `1`
+- `page_size` (number, optional) — backend default `10`. `fetchDeviceMeasurementPointsList` always sends `page=1&page_size=100` so panels with more than 10 points are not truncated in the selectors.
+
+No other filters (no date range).
 
 **Response:** `DeviceMeasurementPointsListResponse` (see `src/features/dashboard/types.ts`)
 
 ```typescript
+type MonitoringTopology = 'mono_1f' | 'three_phase_3w' | 'three_phase_4w'
+
 interface DeviceMeasurementPointsListResponse {
   count: number
   next: string | null
@@ -112,9 +116,11 @@ interface DeviceMeasurementPointsListResponse {
     name: string
     is_active: boolean
     channel: string
-    type: string
-    key: string
-    capacity: string
+    type: string                    // 'monofasico' | 'trifasico' (does not distinguish 3W from 4W)
+    key: string | null
+    capacity: string                // e.g. '220v/220A'
+    capacity_voltage: number | null // nominal voltage in V
+    monitoring_topology: MonitoringTopology | null
     hardware: string
     device: string
     dev_eui: string
@@ -122,12 +128,24 @@ interface DeviceMeasurementPointsListResponse {
     location_reference: string
     installation_date: string | null
     thresholds?: {
-      voltage?: ThresholdRange | null
+      voltage?: VoltageThresholds | null
       current?: ThresholdRange | null
       power?: ThresholdRange | null
       energy?: ThresholdRange | null
     } | null
   }>
+}
+
+interface VoltageBand {
+  lower_threshold: number
+  upper_threshold: number
+  nominal_voltage: number
+}
+
+// Top-level keys are legacy (direct nominal), kept for old clients
+interface VoltageThresholds extends VoltageBand {
+  phase: VoltageBand  // phase-to-neutral voltages
+  line: VoltageBand   // line-to-line voltages
 }
 
 interface ThresholdRange {
@@ -137,7 +155,17 @@ interface ThresholdRange {
 }
 ```
 
-> **Note:** `thresholds` is keyed by indicator **category** (`voltage`, `current`, `power`, `energy`). Only categories with configured thresholds are present. The "Tendencia de Indicador" chart (`readings-graph.tsx`) renders `lower_threshold`/`upper_threshold` as dashed horizontal lines for the active category.
+> **Note:** values are absolute volts, not percentages. `thresholds` is `null` when the point has no resolvable nominal voltage (no `capacity_voltage` and no threshold profile with `nominal_voltage_v`): in that case no reference lines are drawn. The backend resolves the profile point → headquarter → company → default ±5%.
+
+> **Note:** use `monitoring_topology` (not `type`) to know whether the point has phase and/or line voltages:
+>
+> | Topology | Phase (`Ua/Ub/Uc`, `U`) | Line (`Uab/Ubc/Uac`) |
+> |---|---|---|
+> | `three_phase_3w` | readings usually `null` | `line` = direct nominal |
+> | `three_phase_4w` | `phase` = direct nominal | `line` = nominal × √3 |
+> | `mono_1f` | `U` = direct nominal | not applicable |
+
+> **Note:** the "Tendencia de Indicador" chart (`readings-graph.tsx`, `/energia/dashboard/home`) draws `lower_threshold`/`upper_threshold` as dashed horizontal lines. For the `voltage` category the band depends on the active indicator and is resolved by `getVoltageBand()` (`src/features/dashboard/lib/voltage-thresholds.ts`): `phase` for `Ua/Ub/Uc/U`, `line` for `Uab/Ubc/Uac` (none for line voltages on `mono_1f`), and no lines for other voltage indicators (`THDV*`, `Vfun*`, harmonics). The legacy top-level voltage keys are not used. Other categories (`current`, `power`, `energy`) still use `thresholds[category]`.
 
 ---
 

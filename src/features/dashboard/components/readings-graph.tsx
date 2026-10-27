@@ -27,7 +27,8 @@ import {
 } from '@/features/dashboard/lib/readings-graph-labels'
 import { getElectricParameter } from '@/lib/electric-parameters'
 import type { Category } from '@/features/dashboard/hooks/use-home-filters'
-import type { MeasurementPointThresholds } from '@/features/dashboard/types'
+import { getVoltageBand } from '@/features/dashboard/lib/voltage-thresholds'
+import type { DeviceMeasurementPoint } from '@/features/dashboard/types'
 import { cn } from '@/lib/utils'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, zoomPlugin)
@@ -63,7 +64,8 @@ interface ReadingsGraphProps {
   availableIndicators: string[]
   activeIndicator: string
   onIndicatorChange: (indicator: string) => void
-  thresholds?: MeasurementPointThresholds | null
+  // Punto de medición seleccionado: aporta los umbrales y la topología
+  measurementPoint?: Pick<DeviceMeasurementPoint, 'thresholds' | 'monitoring_topology'> | null
 }
 
 function formatThresholdValue(value: number): string {
@@ -80,7 +82,7 @@ export function ReadingsGraph({
   availableIndicators,
   activeIndicator,
   onIndicatorChange,
-  thresholds,
+  measurementPoint,
 }: ReadingsGraphProps) {
   const indicatorOptions =
     availableIndicators.length > 0 ? availableIndicators : FALLBACK_INDICATORS[category]
@@ -135,8 +137,13 @@ export function ReadingsGraph({
   const activeParam = getElectricParameter(activeIndicator)
   const thresholdUnit = activeParam?.unit ?? unit
 
-  // El umbral corresponde a la categoría del indicador seleccionado
-  const thresholdRange = thresholds?.[category] ?? null
+  // El umbral corresponde al indicador seleccionado. En voltaje la banda
+  // depende del indicador: fase (Ua/Ub/Uc/U) o línea (Uab/Ubc/Uac); en 3F-4H
+  // la de línea es nominal × √3, por eso no se reutiliza una sola banda
+  const thresholdRange =
+    category === 'voltage'
+      ? getVoltageBand(measurementPoint, activeIndicator)
+      : (measurementPoint?.thresholds?.[category] ?? null)
   const upperThreshold = thresholdRange?.upper_threshold ?? null
   const lowerThreshold = thresholdRange?.lower_threshold ?? null
 
