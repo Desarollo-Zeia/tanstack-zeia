@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Chart as ChartJS,
@@ -15,7 +15,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useMonitoreoFilters } from '../hooks/use-monitoreo-filters'
 import { fetchIndicatorGraphs } from '../api/indicators'
-import type { RoomIndicatorData, RoomThresholds } from '../types'
+import {
+  alignToAxis,
+  buildUnionAxis,
+  type AxisEntry,
+} from '../utils/align-chart-readings'
+import type {
+  IndicatorReading,
+  RoomIndicatorData,
+  RoomThresholds,
+} from '../types'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
 
@@ -180,15 +189,26 @@ function buildChartData(
   indicator: string,
   visibleRooms: Set<number>
 ): ChartData<'line'> {
-  if (rooms.length === 0) {
+  const roomsWithReadings = rooms.filter((room) => room.readings.length > 0)
+  if (roomsWithReadings.length === 0) {
     return { labels: [], datasets: [] }
   }
 
-  const labels = rooms[0].readings.map((r) => r.hour)
+  // Union of every room's time slots, so a room with readings at hours the
+  // first room lacks is still rendered at its correct position.
+  const keyOf = (reading: IndicatorReading) =>
+    `${reading.date}|${reading.hour}`
+  const axis: AxisEntry<IndicatorReading>[] = buildUnionAxis(
+    roomsWithReadings.map((room) => room.readings),
+    keyOf,
+    (reading) => reading.hour
+  )
+
+  const labels = axis.map((entry) => entry.label)
 
   const roomDatasets = rooms.map((room, index) => ({
     label: room.room_name,
-    data: room.readings.map((r) => r.value),
+    data: alignToAxis(room.readings, axis, keyOf),
     borderColor: ROOM_COLORS[index % ROOM_COLORS.length],
     backgroundColor: ROOM_COLORS[index % ROOM_COLORS.length] + '20',
     borderWidth: 2,
@@ -196,13 +216,22 @@ function buildChartData(
     pointHoverRadius: 5,
     tension: 0.3,
     fill: false,
+    spanGaps: true,
     hidden: !visibleRooms.has(room.room_id),
   }))
 
-  const visibleCount = rooms.filter((r) => visibleRooms.has(r.room_id)).length
+  // Threshold lines only make sense when a single room with readings is
+  // visible; use that room's own thresholds.
+  const visibleRoomsWithReadings = rooms.filter(
+    (room) => visibleRooms.has(room.room_id) && room.readings.length > 0
+  )
   const thresholdLines =
-    visibleCount === 1
-      ? getThresholdLines(indicator, rooms[0].thresholds, labels.length)
+    visibleRoomsWithReadings.length === 1
+      ? getThresholdLines(
+          indicator,
+          visibleRoomsWithReadings[0].thresholds,
+          labels.length
+        )
       : []
 
   return {
@@ -346,9 +375,17 @@ function LegendRow({
   )
 }
 
-export function MonitoreoChart() {
-  const { indicator, unit, isReady } = useMonitoreoFilters()
+interface MonitoreoChartContentProps {
+  indicator: string | null
+  unit: string | null
+  isReady: boolean
+}
 
+function MonitoreoChartContent({
+  indicator,
+  unit,
+  isReady,
+}: MonitoreoChartContentProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['ocupacional-indicator-graph', indicator, unit],
     queryFn: () => {
@@ -358,30 +395,37 @@ export function MonitoreoChart() {
     enabled: isReady,
   })
 
-  const [visibleRooms, setVisibleRooms] = useState<Set<number>>(new Set())
+  const [selectedRooms, setSelectedRooms] = useState<Set<number> | null>(null)
 
-  useEffect(() => {
-    if (data) {
-      setVisibleRooms(new Set([data[0].room_id]))
-    }
-  }, [data])
+  const roomsWithReadings = useMemo(
+    () => (data ?? []).filter((room) => room.readings.length > 0),
+    [data]
+  )
 
-  const chartData = useMemo(() => {
+  const visibleRooms = useMemo(() => {
+    if (selectedRooms) return selectedRooms
+    const firstRoomWithReadings = roomsWithReadings[0]
+    return new Set<number>(
+      firstRoomWithReadings ? [firstRoomWithReadings.room_id] : []
+    )
+  }, [selectedRooms, roomsWithReadings])
+
+  const chartData = useMemo<ChartData<'line'>>(() => {
     if (!data || data.length === 0) return { labels: [], datasets: [] }
     return buildChartData(data, indicator ?? 'CO2', visibleRooms)
   }, [data, indicator, visibleRooms])
 
   const toggleRoom = (roomId: number) => {
-    setVisibleRooms((prev) => {
-      const next = new Set(prev)
-      if (next.has(roomId)) {
-        next.delete(roomId)
-      } else {
-        next.add(roomId)
-      }
-      return next
-    })
+    const next = new Set(visibleRooms)
+    if (next.has(roomId)) {
+      next.delete(roomId)
+    } else {
+      next.add(roomId)
+    }
+    setSelectedRooms(next)
   }
+
+  const hasReadings = roomsWithReadings.length > 0
 
   return (
     <Card>
@@ -395,7 +439,7 @@ export function MonitoreoChart() {
           <div className="h-[400px] flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
-        ) : data && data.length > 0 ? (
+        ) : hasReadings ? (
           <>
             <div className="h-[400px]">
               <Line data={chartData} options={chartOptions} />
@@ -435,7 +479,7 @@ export function MonitoreoChart() {
                 </div>
 
                 <div>
-                  {data.map((room, index) => (
+                  {(data ?? []).map((room, index) => (
                     <LegendRow
                       key={room.room_id}
                       room={room}
@@ -458,5 +502,18 @@ export function MonitoreoChart() {
         )}
       </CardContent>
     </Card>
+  )
+}
+
+export function MonitoreoChart() {
+  const { indicator, unit, isReady } = useMonitoreoFilters()
+
+  return (
+    <MonitoreoChartContent
+      key={`${indicator ?? 'none'}|${unit ?? 'none'}`}
+      indicator={indicator}
+      unit={unit}
+      isReady={isReady}
+    />
   )
 }

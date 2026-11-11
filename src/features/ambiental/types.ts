@@ -101,7 +101,7 @@ export interface RoomIndicatorData {
   room_id: number
   room_name: string
   thresholds: RoomThresholds
-  last_highest_reading: LastHighestReading
+  last_highest_reading: LastHighestReading | null
   readings: IndicatorReading[]
 }
 
