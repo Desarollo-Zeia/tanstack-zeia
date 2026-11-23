@@ -206,4 +206,26 @@ describe('WaterMonthlyBillingView', () => {
     expect(screen.getByRole('button', { name: 'Sep' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Oct' })).toBeInTheDocument()
   })
+
+  it('no se rompe si un cargo llega con value y consumption en null', async () => {
+    vi.spyOn(billingCalculateApi, 'fetchWaterBillingCalculate').mockImplementation(
+      (_id: number, startDate: string, endDate: string) => {
+        const data = buildCalculate(startDate, endDate, 1500)
+        data.results[0] = {
+          ...data.results[0],
+          value: null,
+          details: { consumption: null, unit: 'm³', rate: 8.82, rate_unit: 'PEN/m³' },
+        }
+        return Promise.resolve(data)
+      }
+    )
+
+    renderWithProviders(<WaterMonthlyBillingView sedeId={199} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Desglose — Julio 2026')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Sin consumo registrado')).toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
+  })
 })

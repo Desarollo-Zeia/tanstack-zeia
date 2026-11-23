@@ -10,7 +10,11 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
   PEN: 'S/',
 }
 
-export function formatMoney(value: number, currency: string): string {
+export const NO_CONSUMPTION_LABEL = 'Sin consumo registrado'
+
+/** "S/1,234.50"; "—" cuando el importe llega en null */
+export function formatMoney(value: number | null, currency: string): string {
+  if (value == null) return '—'
   const symbol = CURRENCY_SYMBOLS[currency] ?? currency
   return `${symbol}${value.toLocaleString('es-PE', {
     minimumFractionDigits: 2,
@@ -44,17 +48,23 @@ function getPowerUnit(details: BillingCalculateDetails): string {
   return typeof rateUnit === 'string' && rateUnit.includes('/') ? rateUnit.split('/')[1] : 'kW'
 }
 
-/** Linea de detalle para la lista de cargos: "145.89 MWh" / "21802.28 kVArh" / "434.01 kW" / null */
+/**
+ * Linea de detalle para la lista de cargos: "145.89 MWh" / "21802.28 kVArh" / "434.01 kW".
+ * null si el cargo no tiene detalle; NO_CONSUMPTION_LABEL si el valor llega en null.
+ */
 export function getChargeDetailLine(item: BillingCalculateItem): string | null {
   const { details } = item
   if (!details) return null
   // Energia reactiva: se factura el exceso sobre el umbral (excess * rate = value)
   if ('active_energy_consumption' in details) {
+    if (details.excess_consumption == null) return NO_CONSUMPTION_LABEL
     return `${details.excess_consumption.toFixed(2)} ${details.unit}`
   }
   if ('consumption' in details) {
+    if (details.consumption == null) return NO_CONSUMPTION_LABEL
     return `${details.consumption.toFixed(2)} ${details.unit}`
   }
+  if (details.max_power == null) return NO_CONSUMPTION_LABEL
   return `${details.max_power.toFixed(2)} ${getPowerUnit(details)}`
 }
 

@@ -1,5 +1,6 @@
 import {
   CURRENCY_SYMBOLS,
+  NO_CONSUMPTION_LABEL,
   formatCycleRange,
   formatMoney,
   getCycleLabel,
@@ -36,11 +37,13 @@ export function getWaterBillingTotals(data: WaterBillingCalculateResponse): Wate
  * Línea de detalle para la lista de cargos de agua:
  * - Agua potable: "139.00 m³"
  * - Alcantarillado: "139.00 m³ × 0.8 = 111.20 m³"
+ * - "Sin consumo registrado" cuando consumption llega en null
  * - null cuando el concepto no tiene tarifa configurada (details = null)
  */
 export function getWaterChargeDetailLine(item: WaterBillingCalculateItem): string | null {
   const { details } = item
   if (!details) return null
+  if (details.consumption == null) return NO_CONSUMPTION_LABEL
   const consumption = `${details.consumption.toFixed(2)} ${details.unit}`
   if (details.factor != null && details.billed_volume != null) {
     return `${consumption} × ${details.factor} = ${details.billed_volume.toFixed(2)} ${details.unit}`
@@ -48,8 +51,8 @@ export function getWaterChargeDetailLine(item: WaterBillingCalculateItem): strin
   return consumption
 }
 
-/** Tarifa formateada: "8.82 PEN/m³" / null */
+/** Tarifa formateada: "8.82 PEN/m³" / null (sin detalle o rate/rate_unit en null) */
 export function formatWaterRate(details: WaterBillingCalculateDetails | null): string | null {
-  if (!details) return null
+  if (!details || details.rate == null || !details.rate_unit) return null
   return `${details.rate.toFixed(2)} ${details.rate_unit}`
 }

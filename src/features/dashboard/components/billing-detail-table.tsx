@@ -17,7 +17,8 @@ interface BillingDetailTableProps {
   sedeId: number
 }
 
-function formatImporte(value: number, currency: string): string {
+function formatImporte(value: number | null, currency: string): string {
+  if (value == null) return '—'
   const symbol = CURRENCY_SYMBOLS[currency] ?? currency
   return `${symbol} ${value.toLocaleString('es-PE', {
     minimumFractionDigits: 2,

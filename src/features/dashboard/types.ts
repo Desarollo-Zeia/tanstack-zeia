@@ -403,28 +403,29 @@ export interface TariffPdfsResponse {
 }
 
 // Billing Calculate (Cálculo de Facturación)
+// Los campos numéricos pueden llegar en null (p.ej. ciclo sin lecturas)
 export interface BillingCalculateEnergyDetails {
-  consumption: number
+  consumption: number | null
   unit: string
-  rate: number
-  rate_unit: string
+  rate: number | null
+  rate_unit: string | null
 }
 
 export interface BillingCalculatePowerDetails {
-  max_power: number
-  max_power_datetime: string
-  rate: number
-  rate_unit: string
+  max_power: number | null
+  max_power_datetime: string | null
+  rate: number | null
+  rate_unit: string | null
 }
 
 export interface BillingCalculateReactiveDetails {
-  consumption: number
-  active_energy_consumption: number
-  threshold_percent: number
-  excess_consumption: number
+  consumption: number | null
+  active_energy_consumption: number | null
+  threshold_percent: number | null
+  excess_consumption: number | null
   unit: string
-  rate: number
-  rate_unit: string
+  rate: number | null
+  rate_unit: string | null
 }
 
 export type BillingCalculateDetails =
@@ -435,7 +436,8 @@ export type BillingCalculateDetails =
 export interface BillingCalculateItem {
   code: string
   name: string
-  value: number
+  // null cuando no se pudo calcular el importe (p.ej. sin consumo registrado)
+  value: number | null
   currency: string
   details: BillingCalculateDetails | null
 }

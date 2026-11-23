@@ -540,28 +540,29 @@ Returns the calculated billing breakdown (itemized charges) for a headquarter wi
 **Response:** `BillingCalculateResponse` (see `src/features/dashboard/types.ts`)
 
 ```typescript
+// Los campos numéricos pueden llegar en null (p.ej. ciclo sin lecturas)
 interface BillingCalculateEnergyDetails {
-  consumption: number
+  consumption: number | null
   unit: string
-  rate: number
-  rate_unit: string
+  rate: number | null
+  rate_unit: string | null
 }
 
 interface BillingCalculatePowerDetails {
-  max_power: number
-  max_power_datetime: string
-  rate: number
-  rate_unit: string
+  max_power: number | null
+  max_power_datetime: string | null
+  rate: number | null
+  rate_unit: string | null
 }
 
 interface BillingCalculateReactiveDetails {
-  consumption: number
-  active_energy_consumption: number
-  threshold_percent: number
-  excess_consumption: number
+  consumption: number | null
+  active_energy_consumption: number | null
+  threshold_percent: number | null
+  excess_consumption: number | null
   unit: string
-  rate: number
-  rate_unit: string
+  rate: number | null
+  rate_unit: string | null
 }
 
 type BillingCalculateDetails =
@@ -572,7 +573,7 @@ type BillingCalculateDetails =
 interface BillingCalculateItem {
   code: string
   name: string
-  value: number
+  value: number | null
   currency: string
   details: BillingCalculateDetails | null
 }
@@ -591,6 +592,8 @@ interface BillingCalculateResponse {
 > **Note:** `details` is polymorphic — energy charges include `consumption`/`unit`, power charges include `max_power`/`max_power_datetime`, reactive energy charges (e.g. `energia_reactiva_inductiva`) include `active_energy_consumption`/`threshold_percent`/`excess_consumption`, and fixed charges (e.g. `cargo_fijo_mensual`) return `details: null`.
 >
 > **Note:** `total_amount`/`currency` are only populated when all charges share a single currency; they are `null` for mixed-currency responses. `totals_by_currency` always carries the per-currency totals (e.g. `{ "USD": 9520.7, "PEN": 1072.67 }`).
+>
+> **Note:** `value` and the numeric fields of `details` can be `null` (e.g. a cycle without readings: `{ "value": null, "details": { "consumption": null, "unit": "kWh", "rate": 0.65, "rate_unit": "PEN/kWh" } }`). The UI shows `—` for the amount (`formatMoney`) and "Sin consumo registrado" for the detail line (`getChargeDetailLine`); a null `value` counts as 0 in the distribution bar. The same applies to `water/billing-calculate/` (`getWaterChargeDetailLine`, `formatWaterRate`).
 
 ---
 

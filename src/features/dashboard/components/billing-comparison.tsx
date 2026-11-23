@@ -65,7 +65,7 @@ function getEnergyConsumption(data: BillingCalculateResponse | undefined): numbe
       'consumption' in item.details &&
       !('active_energy_consumption' in item.details)
     ) {
-      return sum + item.details.consumption
+      return sum + (item.details.consumption ?? 0)
     }
     return sum
   }, 0)
@@ -171,7 +171,7 @@ function BillingCard({
               .filter((item) => item.currency === total.currency)
               .map((item) => ({
                 code: item.code,
-                pct: (item.value / total.amount) * 100,
+                pct: ((item.value ?? 0) / total.amount) * 100,
                 color: itemStyles.get(item.code)?.bar ?? FALLBACK_CHARGE_STYLE.bar,
               }))
           : [],

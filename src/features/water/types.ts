@@ -146,20 +146,22 @@ export interface WaterBillingConceptsResponse {
   results: WaterBillingConcept[]
 }
 
+// Los campos numéricos pueden llegar en null (p.ej. ciclo sin lecturas)
 export interface WaterBillingCalculateDetails {
-  consumption: number
+  consumption: number | null
   unit: string
-  rate: number
-  rate_unit: string
+  rate: number | null
+  rate_unit: string | null
   // Solo alcantarillado: factor de descarga y volumen facturable
-  factor?: number
-  billed_volume?: number
+  factor?: number | null
+  billed_volume?: number | null
 }
 
 export interface WaterBillingCalculateItem {
   code: string
   name: string
-  value: number
+  // null cuando no se pudo calcular el importe (p.ej. sin consumo registrado)
+  value: number | null
   currency: string
   // null cuando el concepto no tiene tarifa configurada (value = 0.0)
   details: WaterBillingCalculateDetails | null
